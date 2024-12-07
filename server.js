@@ -1,6 +1,8 @@
 const express = require('express'); // Import express
 const app = express(); // Initialize express app
 const authRoutes = require('./routes/auth'); // Import auth routes
+const db = require('./db');
+
 
 const PORT = 3000; // Define the port
 

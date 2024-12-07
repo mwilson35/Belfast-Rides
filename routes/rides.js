@@ -1,53 +1,48 @@
-console.log('rides.js loaded successfully'); // Debug log for file loading
-
 const express = require('express');
 const router = express.Router();
-const authenticateToken = require('./middleware'); // Import middleware
+const db = require('../db'); // Import database connection
+const authenticateToken = require('./middleware'); // JWT middleware
 
-console.log('Middleware type:', typeof authenticateToken); // Check if middleware is a function
-
-
-let rides = []; // Temporary in-memory storage for ride data
-
-// Request a Ride (Protected Route)
+// Request a Ride
 router.post('/request', authenticateToken, (req, res) => {
-    console.log('Ride request route hit'); // Debug log to confirm route access
-    const { pickupLocation, destination, riderUsername } = req.body;
+    const { pickupLocation, destination } = req.body;
+    const riderId = req.user.id; // Extracted from JWT
 
-    const newRide = {
-        id: rides.length + 1,
-        pickupLocation,
-        destination,
-        riderUsername,
-        status: 'requested',
-    };
-
-    rides.push(newRide);
-    res.status(201).json({ message: 'Ride requested successfully', ride: newRide });
+    db.query(
+        'INSERT INTO rides (pickup_location, destination, rider_id) VALUES (?, ?, ?)',
+        [pickupLocation, destination, riderId],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Database error' });
+            res.status(201).json({ message: 'Ride requested successfully', rideId: results.insertId });
+        }
+    );
 });
 
-// View Available Rides for Drivers (Unprotected Route for Demo)
+// View Available Rides
 router.get('/available', (req, res) => {
-    console.log('View available rides route hit'); // Debug log to confirm route access
-    const availableRides = rides.filter(ride => ride.status === 'requested');
-    res.json(availableRides);
+    db.query('SELECT * FROM rides WHERE status = "requested"', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.json(results);
+    });
 });
 
-// Accept a Ride (Protected Route for Drivers)
+// Accept a Ride
 router.post('/accept', authenticateToken, (req, res) => {
-    console.log('Ride accept route hit'); // Debug log to confirm route access
-    const { rideId, driverUsername } = req.body;
+    const { rideId } = req.body;
+    const driverId = req.user.id; // Extracted from JWT
 
-    const ride = rides.find(ride => ride.id === rideId);
-    if (!ride) {
-        return res.status(404).json({ message: 'Ride not found' });
-    }
-
-    // Update ride status and assign a driver
-    ride.status = 'accepted';
-    ride.driverUsername = driverUsername;
-
-    res.json({ message: 'Ride accepted', ride });
+    // Update ride status and assign the driver
+    db.query(
+        'UPDATE rides SET status = "accepted", driver_id = ? WHERE id = ? AND status = "requested"',
+        [driverId, rideId],
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Database error' });
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ message: 'Ride not found or already accepted' });
+            }
+            res.json({ message: 'Ride accepted' });
+        }
+    );
 });
 
 module.exports = router;
