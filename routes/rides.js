@@ -63,5 +63,37 @@ router.post('/accept', authenticateToken, (req, res) => {
         }
     );
 });
+// View Ride History (Protected Route)
+router.get('/history', authenticateToken, (req, res) => {
+    const userId = req.user.id; // Extract user ID from token
+    const userRole = req.user.role; // Extract user role from token
+
+    console.log('Fetching ride history for user:', { userId, role: userRole });
+
+    // Query based on user role
+    let query;
+    let params;
+
+    if (userRole === 'rider') {
+        query = 'SELECT * FROM rides WHERE rider_id = ?';
+        params = [userId];
+    } else if (userRole === 'driver') {
+        query = 'SELECT * FROM rides WHERE driver_id = ?';
+        params = [userId];
+    } else {
+        return res.status(403).json({ message: 'Forbidden: Invalid role' });
+    }
+
+    // Execute the query
+    db.query(query, params, (err, results) => {
+        if (err) {
+            console.error('Database error while fetching ride history:', err.message);
+            return res.status(500).json({ message: 'Database error' });
+        }
+        console.log('Ride history fetched:', results);
+        res.json(results);
+    });
+});
+
 
 module.exports = router;

@@ -6,37 +6,32 @@ const router = express.Router();
 
 // User Signup
 router.post('/signup', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, role } = req.body;
 
-    // Log incoming data
-    console.log('Signup route was hit');
-    console.log('Request body:', req.body);
+    console.log('Signup route hit with data:', { username, role });
 
-    console.log('Checking if user exists...');
+    // Validate role (optional: restrict to known roles)
+    const validRoles = ['rider', 'driver', 'admin'];
+    if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    // Check if user already exists
     db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
-        if (err) {
-            console.error('Error checking for user:', err.message);
-            return res.status(500).json({ message: 'Database error' });
-        }
-
+        if (err) return res.status(500).json({ message: 'Database error' });
         if (results.length > 0) {
-            console.log('User already exists:', username);
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        console.log('User does not exist, hashing password...');
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        console.log('Saving user to database...');
+        // Insert user into the database
         db.query(
-            'INSERT INTO users (username, password) VALUES (?, ?)',
-            [username, hashedPassword],
+            'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+            [username, hashedPassword, role],
             (err) => {
-                if (err) {
-                    console.error('Error inserting user:', err.message);
-                    return res.status(500).json({ message: 'Error saving user' });
-                }
-                console.log('User registered successfully:', username);
+                if (err) return res.status(500).json({ message: 'Error saving user' });
                 res.status(201).json({ message: 'User registered successfully!' });
             }
         );

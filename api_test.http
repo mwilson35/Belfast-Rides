@@ -1,8 +1,7 @@
-POST http://localhost:3000/rides/accept
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3R1c2VyIiwiaWF0IjoxNzMzNTE1ODkyLCJleHAiOjE3MzM1MTk0OTJ9.vWTUA9L9JXHRvLDemfHv7z5AwMeD176zhX8oOHNJUv0
+POST http://localhost:3000/rides/cancel
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZSI6InJpZGVyIiwiaWF0IjoxNzMzNjc2Mzc5LCJleHAiOjE3MzM2Nzk5Nzl9.azVx0fdkhX9B43dIWwGVtMxrX4IikmwhEPvlnaBzaC4
 Content-Type: application/json
 
 {
-    "rideId": 1,
-    "driverUsername": "driver1"
+    "rideId": 4
 }

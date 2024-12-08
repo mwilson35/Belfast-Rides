@@ -1,8 +1,8 @@
 const express = require('express'); // Import express
 const app = express(); // Initialize express app
 const authRoutes = require('./routes/auth'); // Import auth routes
-const db = require('./db');
-
+const ridesRoutes = require('./routes/rides'); // Import ride management routes
+const db = require('./db'); // Import database connection
 
 const PORT = 3000; // Define the port
 
@@ -23,9 +23,7 @@ try {
 // Register ride management routes
 try {
     console.log('Attempting to load rides.js...');
-    const ridesRoutes = require('./routes/rides'); // Import ride management routes
-    console.log('rides.js successfully loaded.');
-    app.use('/rides', ridesRoutes);
+    app.use('/rides', ridesRoutes); // Register the /rides routes
     console.log('Ride management routes registered.');
 } catch (error) {
     console.error('Error loading rides.js:', error.message);
