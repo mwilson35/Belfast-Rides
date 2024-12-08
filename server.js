@@ -14,6 +14,7 @@ console.log('Server loaded. Routes about to be registered.');
 
 // Register authentication routes
 try {
+    console.log('Registering authentication routes...');
     app.use('/auth', authRoutes);
     console.log('Authentication routes registered.');
 } catch (error) {
@@ -22,7 +23,7 @@ try {
 
 // Register ride management routes
 try {
-    console.log('Attempting to load rides.js...');
+    console.log('Registering ride management routes...');
     app.use('/rides', ridesRoutes); // Register the /rides routes
     console.log('Ride management routes registered.');
 } catch (error) {

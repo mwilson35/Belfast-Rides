@@ -1,7 +1,11 @@
+console.log('Attempting to load middleware...');
+const path = require('path');
+const authenticateToken = require('./middleware'); // Use relative path as middleware.js is in the same folder
+console.log('Middleware loaded successfully.');
+
 const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Import database connection
-const authenticateToken = require('./middleware'); // JWT middleware
 
 // Request a Ride
 router.post('/request', authenticateToken, (req, res) => {
@@ -10,7 +14,6 @@ router.post('/request', authenticateToken, (req, res) => {
 
     console.log('Ride request received:', { pickupLocation, destination, riderId });
 
-    // Insert ride request into the database
     db.query(
         'INSERT INTO rides (pickup_location, destination, rider_id) VALUES (?, ?, ?)',
         [pickupLocation, destination, riderId],
@@ -25,6 +28,7 @@ router.post('/request', authenticateToken, (req, res) => {
     );
 });
 
+// View Available Rides
 router.get('/available', (req, res) => {
     console.log('Fetching available rides...');
     db.query('SELECT * FROM rides WHERE status = "requested"', (err, results) => {
@@ -37,7 +41,6 @@ router.get('/available', (req, res) => {
     });
 });
 
-
 // Accept a Ride
 router.post('/accept', authenticateToken, (req, res) => {
     const { rideId } = req.body;
@@ -45,7 +48,6 @@ router.post('/accept', authenticateToken, (req, res) => {
 
     console.log('Accepting ride:', { rideId, driverId });
 
-    // Update ride status and assign driver
     db.query(
         'UPDATE rides SET status = "accepted", driver_id = ? WHERE id = ? AND status = "requested"',
         [driverId, rideId],
@@ -63,17 +65,62 @@ router.post('/accept', authenticateToken, (req, res) => {
         }
     );
 });
-// View Ride History (Protected Route)
+
+// Cancel a Ride
+router.post('/cancel', authenticateToken, (req, res) => {
+    const userId = req.user.id; // Extract user ID from the token
+    const userRole = req.user.role; // Extract user role from the token
+    const { rideId } = req.body;
+
+    console.log(`Cancellation request by user: ${userId} (Role: ${userRole}) for Ride ID: ${rideId}`);
+
+    // Fetch the ride from the database
+    db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, results) => {
+        if (err) {
+            console.error('Database error:', err.message);
+            return res.status(500).json({ message: 'Database error' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Ride not found' });
+        }
+
+        const ride = results[0];
+
+        // Validate that the user is allowed to cancel
+        if (userRole === 'rider' && ride.rider_id !== userId) {
+            return res.status(403).json({ message: 'Forbidden: You cannot cancel this ride' });
+        }
+        if (userRole === 'driver' && ride.driver_id !== userId) {
+            return res.status(403).json({ message: 'Forbidden: You cannot cancel this ride' });
+        }
+
+        // Prevent cancellation for in-progress or completed rides
+        if (['in_progress', 'completed'].includes(ride.status)) {
+            return res.status(400).json({ message: 'Cannot cancel a ride that is in progress or completed' });
+        }
+
+        // Update ride status to canceled
+        db.query('UPDATE rides SET status = ? WHERE id = ?', ['canceled', rideId], (err) => {
+            if (err) {
+                console.error('Error updating ride status:', err.message);
+                return res.status(500).json({ message: 'Error canceling ride' });
+            }
+
+            console.log(`Ride ID: ${rideId} successfully canceled by user: ${userId}`);
+            res.json({ message: 'Ride canceled successfully' });
+        });
+    });
+});
+
+
+// View Ride History
 router.get('/history', authenticateToken, (req, res) => {
     const userId = req.user.id; // Extract user ID from token
     const userRole = req.user.role; // Extract user role from token
 
     console.log('Fetching ride history for user:', { userId, role: userRole });
 
-    // Query based on user role
-    let query;
-    let params;
-
+    let query, params;
     if (userRole === 'rider') {
         query = 'SELECT * FROM rides WHERE rider_id = ?';
         params = [userId];
@@ -84,7 +131,6 @@ router.get('/history', authenticateToken, (req, res) => {
         return res.status(403).json({ message: 'Forbidden: Invalid role' });
     }
 
-    // Execute the query
     db.query(query, params, (err, results) => {
         if (err) {
             console.error('Database error while fetching ride history:', err.message);
@@ -95,5 +141,6 @@ router.get('/history', authenticateToken, (req, res) => {
     });
 });
 
-
+// Ensure this is at the very end of the file
 module.exports = router;
+
