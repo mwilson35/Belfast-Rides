@@ -1,7 +1,2 @@
-POST http://localhost:3000/rides/cancel
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZSI6InJpZGVyIiwiaWF0IjoxNzMzNjc2Mzc5LCJleHAiOjE3MzM2Nzk5Nzl9.azVx0fdkhX9B43dIWwGVtMxrX4IikmwhEPvlnaBzaC4
-Content-Type: application/json
-
-{
-    "rideId": 4
-}
+GET http://localhost:3000/rides/history
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6ImRyaXZlciIsImlhdCI6MTczMzc0NTc1NywiZXhwIjoxNzMzNzQ5MzU3fQ.NAg_Ze67oQJPXNX-oqMmR_8o_cLib4TJrF6ZAButdrE
