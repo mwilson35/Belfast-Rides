@@ -1,2 +1,2 @@
-GET http://localhost:3000/rides/history
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6ImRyaXZlciIsImlhdCI6MTczMzc0NTc1NywiZXhwIjoxNzMzNzQ5MzU3fQ.NAg_Ze67oQJPXNX-oqMmR_8o_cLib4TJrF6ZAButdrE
+GET http://localhost:3000/driver/earnings
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwicm9sZSI6ImRyaXZlciIsImlhdCI6MTczMzk1MTEwOSwiZXhwIjoxNzMzOTU0NzA5fQ.NxTFNNwPT2-DrRIj_ds0RAN0JUZBpYqmxFN8bcPw-m8

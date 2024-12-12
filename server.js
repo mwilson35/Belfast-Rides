@@ -30,6 +30,15 @@ try {
     console.error('Error loading rides.js:', error.message);
 }
 
+// Register driver-specific routes (uses ridesRoutes for driver-specific operations like earnings)
+try {
+    console.log('Registering driver-specific routes...');
+    app.use('/driver', ridesRoutes); // Register driver-specific routes
+    console.log('Driver-specific routes registered.');
+} catch (error) {
+    console.error('Error loading driver-specific routes:', error.message);
+}
+
 // Test route to confirm server is working
 app.get('/', (req, res) => {
     res.send('Welcome to Belfast Rides Backend!');
