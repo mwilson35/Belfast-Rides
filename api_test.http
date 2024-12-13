@@ -1,2 +1,1 @@
-GET http://localhost:3000/driver/earnings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIsInJvbGUiOiJkcml2ZXIiLCJpYXQiOjE3MzQwMjAyMzYsImV4cCI6MTczNDAyMzgzNn0.5IxRDDZnEUcJuQiGMgUXaBo1a7t1X5-5ABYZv-TGzws
+GET http://localhost:3000/calculate-distance?origin=New+York+City,NY&destination=Los+Angeles,CA
