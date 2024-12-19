@@ -1,1 +1,2 @@
-GET http://localhost:3000/calculate-distance?origin=New+York+City,NY&destination=Los+Angeles,CA
+GET http://localhost:3000/rides/history
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwicm9sZSI6ImRyaXZlciIsImlhdCI6MTczNDYzNDkyMCwiZXhwIjoxNzM0NjM4NTIwfQ.l5w7R3NFtibWoqs-6obVUct2dZ18Lq4MB4sK6ap2YYc

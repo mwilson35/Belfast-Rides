@@ -66,6 +66,46 @@ app.get('/calculate-distance', async (req, res) => {
     }
 });
 
+app.get('/get-directions', async (req, res) => {
+    try {
+        const { origin, destination } = req.query;
+
+        const response = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
+            params: {
+                origin: origin,
+                destination: destination,
+                key: process.env.GOOGLE_MAPS_API_KEY
+            }
+        });
+
+        res.json(response.data); // Send the API response back
+    } catch (error) {
+        console.error('Error fetching directions:', error.message);
+        res.status(500).json({ error: 'Failed to fetch directions' });
+    }
+});
+app.get('/static-map', (req, res) => {
+    const { center, zoom = 12 } = req.query; // Center and optional zoom
+    const size = '600x400'; // Default size
+
+    if (!center) {
+        return res.status(400).json({ error: "Missing 'center' parameter" });
+    }
+
+    // Encode center to handle spaces or special characters
+    const encodedCenter = encodeURIComponent(center);
+
+    const url = `https://maps.googleapis.com/maps/api/staticmap?center=${encodedCenter}&zoom=${zoom}&size=${size}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+
+    console.log('Generated Static Map URL:', url); // Debugging the URL
+    res.json({ url });
+});
+
+
+
+
+
+
 
 const PORT = 3000; // Define the port
 

@@ -2,23 +2,68 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('./middleware');
+const axios = require('axios');
 const { getWeekStartAndEnd } = require('../dateUtils');
 const stripe = require('stripe')('sk_test_51QUBlfL02n57NqWa21vCRIFtWiWRVkRNBGUkGjyRRfhORqzoTGQNHEu9tULCtUXdcD9N6tGurD8zBtjHVb5zjF7n00DB3wwYp0');
 
 // Request a Ride
-router.post('/request', authenticateToken, (req, res) => {
+router.post('/request', authenticateToken, async (req, res) => {
     const { pickupLocation, destination } = req.body;
     const riderId = req.user.id;
 
-    db.query(
-        'INSERT INTO rides (pickup_location, destination, rider_id, status, payment_status) VALUES (?, ?, ?, ?, ?)',
-        [pickupLocation, destination, riderId, 'requested', 'pending'],
-        (err, results) => {
-            if (err) return res.status(500).json({ message: 'Database error' });
-            res.status(201).json({ message: 'Ride requested successfully', rideId: results.insertId });
+    console.log(`Requesting ride from ${pickupLocation} to ${destination} by Rider ID: ${riderId}`);
+
+    try {
+        // Call Google Distance Matrix API
+        const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+            params: {
+                origins: pickupLocation,
+                destinations: destination,
+                key: process.env.GOOGLE_MAPS_API_KEY,
+            },
+        });
+
+        const data = response.data;
+
+        // Check for valid response
+        if (data.status !== 'OK' || data.rows[0].elements[0].status !== 'OK') {
+            return res.status(400).json({ message: 'Unable to calculate distance. Please check locations.' });
         }
-    );
+
+        const distanceInMeters = data.rows[0].elements[0].distance.value; // Distance in meters
+        const distanceInKm = distanceInMeters / 1000; // Convert to kilometers
+        const baseFare = 2.5; // Example base fare
+        const farePerKm = 1.2; // Example fare per kilometer
+        const estimatedFare = baseFare + distanceInKm * farePerKm;
+
+        console.log(`Calculated distance: ${distanceInKm.toFixed(2)} km, Estimated Fare: $${estimatedFare.toFixed(2)}`);
+
+        // Insert the ride into the database
+        db.query(
+            'INSERT INTO rides (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [pickupLocation, destination, riderId, distanceInKm, estimatedFare, 'requested', 'pending'],
+            (err, results) => {
+                if (err) {
+                    console.error('Database error while requesting ride:', err.message);
+                    return res.status(500).json({ message: 'Database error' });
+                }
+
+                console.log('Ride successfully requested with ID:', results.insertId);
+                res.status(201).json({
+                    message: 'Ride requested successfully',
+                    rideId: results.insertId,
+                    distance: `${distanceInKm.toFixed(2)} km`,
+                    estimatedFare: `$${estimatedFare.toFixed(2)}`,
+                });
+            }
+        );
+    } catch (error) {
+        console.error('Error calculating distance or requesting ride:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
+
+
 
 // View Available Rides
 router.get('/available', (req, res) => {
@@ -127,6 +172,8 @@ router.post('/payment/confirm', authenticateToken, (req, res) => {
 });
 
 // Complete a Ride
+const { calculateFare } = require('../utils/fareUtils'); // Import the centralized fare calculation function
+
 router.post('/complete', authenticateToken, (req, res) => {
     const userId = req.user.id; // Extract user ID from the token
     const userRole = req.user.role; // Extract user role from the token
@@ -163,10 +210,14 @@ router.post('/complete', authenticateToken, (req, res) => {
             return res.status(400).json({ message: 'Cannot complete a ride that is not in progress or accepted' });
         }
 
-        // Calculate fare if distance exists, otherwise use base fare
-        const baseFare = 2.5;
-        const farePerKm = 1.2;
-        const fare = ride.distance ? baseFare + ride.distance * farePerKm : baseFare;
+        // Calculate fare using centralized function
+        const pricing = {
+            base_fare: 2.5,
+            per_km_rate: 1.2,
+            surge_multiplier: ride.surge_multiplier || 1.0 // Optional surge multiplier
+        };
+
+        const fare = calculateFare(ride.distance || 0, pricing); // Use 0 if distance is not available
 
         // Update the ride's status and fare in the database
         db.query(
