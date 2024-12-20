@@ -169,12 +169,17 @@ router.post('/payment', authenticateToken, (req, res) => {
     const { rideId, amount } = req.body;
     const userId = req.user.id;
 
+    // Fetch ride details
     db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, results) => {
         if (err || results.length === 0) return res.status(404).json({ message: 'Ride not found' });
 
         const ride = results[0];
         if (ride.payment_status === 'processed') {
             return res.status(400).json({ message: 'Payment already processed for this ride' });
+        }
+
+        if (ride.fare !== amount) {
+            return res.status(400).json({ message: 'Incorrect payment amount' });
         }
 
         const mockPaymentIntentId = `pi_mock_${rideId}`;
@@ -186,15 +191,16 @@ router.post('/payment', authenticateToken, (req, res) => {
                 res.json({ message: 'Mock payment intent created', clientSecret: mockPaymentIntentId });
             }
         );
-    });
+    }); 
 });
+
 
 // Confirm Payment (Mocked for Testing)
 router.post('/payment/confirm', authenticateToken, (req, res) => {
     const { rideId } = req.body;
     const userId = req.user.id;
 
-    db.query('SELECT payment_intent_id FROM rides WHERE id = ?', [rideId], (err, results) => {
+    db.query('SELECT payment_intent_id, fare FROM rides WHERE id = ?', [rideId], (err, results) => {
         if (err || results.length === 0) return res.status(404).json({ message: 'Ride not found or paymentIntentId missing' });
 
         const paymentIntentId = results[0]?.payment_intent_id;
@@ -217,7 +223,8 @@ router.post('/payment/confirm', authenticateToken, (req, res) => {
         );
     });
 });
-    
+
+
 // Complete a Ride
 const { calculateFare } = require('../utils/fareUtils'); // Import the centralized fare calculation function
 
