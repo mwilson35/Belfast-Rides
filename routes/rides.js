@@ -6,6 +6,53 @@ const axios = require('axios');
 const { getWeekStartAndEnd } = require('../dateUtils');
 const stripe = require('stripe')('sk_test_51QUBlfL02n57NqWa21vCRIFtWiWRVkRNBGUkGjyRRfhORqzoTGQNHEu9tULCtUXdcD9N6tGurD8zBtjHVb5zjF7n00DB3wwYp0');
 
+router.post('/preview', authenticateToken, async (req, res) => {
+    const { pickupLocation, destination } = req.body;
+
+    if (!pickupLocation || !destination) {
+        return res.status(400).json({ message: 'Pickup and destination locations are required.' });
+    }
+
+    try {
+        console.log(`Previewing ride from ${pickupLocation} to ${destination}`);
+
+        // Call Google Maps Distance Matrix API
+        const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+            params: {
+                origins: pickupLocation,
+                destinations: destination,
+                key: process.env.GOOGLE_MAPS_API_KEY
+            }
+        });
+
+        const data = response.data;
+
+        if (data.rows[0]?.elements[0]?.status !== 'OK') {
+            return res.status(400).json({ message: 'Unable to calculate distance and duration.' });
+        }
+
+        const distance = data.rows[0].elements[0].distance.value / 1000; // Convert meters to kilometers
+        const duration = data.rows[0].elements[0].duration.text;
+
+        // Calculate fare
+        const baseFare = 2.5;
+        const farePerKm = 1.2;
+        const estimatedFare = (baseFare + distance * farePerKm).toFixed(2);
+
+        // Respond with preview data
+        res.json({
+            pickupLocation,
+            destination,
+            distance: `${distance.toFixed(2)} km`,
+            duration,
+            estimatedFare: `$${estimatedFare}`
+        });
+    } catch (error) {
+        console.error('Error during ride preview:', error.message);
+        res.status(500).json({ message: 'Failed to preview ride.' });
+    }
+});
+
 // Request a Ride
 router.post('/request', authenticateToken, async (req, res) => {
     const { pickupLocation, destination } = req.body;
@@ -170,7 +217,7 @@ router.post('/payment/confirm', authenticateToken, (req, res) => {
         );
     });
 });
-
+    
 // Complete a Ride
 const { calculateFare } = require('../utils/fareUtils'); // Import the centralized fare calculation function
 
