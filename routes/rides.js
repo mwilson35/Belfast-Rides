@@ -225,6 +225,7 @@ router.post('/payment/confirm', authenticateToken, (req, res) => {
 });
 
 
+
 // Complete a Ride
 const { calculateFare } = require('../utils/fareUtils'); // Import the centralized fare calculation function
 
@@ -297,8 +298,14 @@ router.post('/complete', authenticateToken, (req, res) => {
 
                         console.log(`Earnings updated for Driver ID: ${userId}, Ride ID: ${rideId}, Amount: ${fare}`);
 
-                        // Update weekly earnings table
-                        const { formattedWeekStart, formattedWeekEnd } = getWeekStartAndEnd();
+                        // Correctly calculate weekly earnings
+                        const currentDate = new Date(); // Always use the current date
+                        const { formattedWeekStart, formattedWeekEnd } = getWeekStartAndEnd(currentDate);
+
+                        console.log(
+                            `Updating weekly earnings for week start: ${formattedWeekStart} and end: ${formattedWeekEnd}`
+                        );
+
                         db.query(
                             `INSERT INTO weekly_earnings (driver_id, week_start, week_end, total_earnings)
                              VALUES (?, ?, ?, ?)
@@ -320,6 +327,38 @@ router.post('/complete', authenticateToken, (req, res) => {
         );
     });
 });
+
+
+// Process Payment (Mocked for Testing)
+router.post('/payment', authenticateToken, (req, res) => {
+    const { rideId, amount } = req.body;
+    const userId = req.user.id;
+
+    // Fetch ride details
+    db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, results) => {
+        if (err || results.length === 0) return res.status(404).json({ message: 'Ride not found' });
+
+        const ride = results[0];
+        if (ride.payment_status === 'processed') {
+            return res.status(400).json({ message: 'Payment already processed for this ride' });
+        }
+
+        if (ride.fare !== amount) {
+            return res.status(400).json({ message: 'Incorrect payment amount' });
+        }
+
+        const mockPaymentIntentId = `pi_mock_${rideId}`;
+        db.query(
+            'UPDATE rides SET payment_intent_id = ?, payment_status = ? WHERE id = ?',
+            [mockPaymentIntentId, 'pending', rideId],
+            (err) => {
+                if (err) return res.status(500).json({ message: 'Database error' });
+                res.json({ message: 'Mock payment intent created', clientSecret: mockPaymentIntentId });
+            }
+        );
+    }); 
+});
+
 
 
 // Fetch Weekly Earnings
