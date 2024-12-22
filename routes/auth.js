@@ -6,37 +6,59 @@ const router = express.Router();
 
 // User Signup
 router.post('/signup', async (req, res) => {
-    const { username, password, role } = req.body;
+    const { username, email, password } = req.body;
 
-    console.log('Signup route hit with data:', { username, role });
-
-    // Validate role (optional: restrict to known roles)
-    const validRoles = ['rider', 'driver', 'admin'];
-    if (!validRoles.includes(role)) {
-        return res.status(400).json({ message: 'Invalid role' });
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    // Check if user already exists
-    db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
-        if (results.length > 0) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-
-        // Hash password
+    try {
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert user into the database
         db.query(
-            'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-            [username, hashedPassword, role],
-            (err) => {
-                if (err) return res.status(500).json({ message: 'Error saving user' });
-                res.status(201).json({ message: 'User registered successfully!' });
+            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+            [username, email, hashedPassword, 'rider'], // Default role is "rider"
+            (err, results) => {
+                if (err) {
+                    console.error('Database error during signup:', err.message);
+                    return res.status(500).json({ message: 'Database error' });
+                }
+                res.status(201).json({ message: 'Signup successful', userId: results.insertId });
             }
         );
-    });
+    } catch (error) {
+        console.error('Error during signup:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
+
+//Driver Signup
+router.post('/driver-signup', async (req, res) => {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: 'All fields are required.' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        db.query(
+            'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+            [username, email, hashedPassword, 'driver'], // Role set as "driver"
+            (err, results) => {
+                if (err) {
+                    console.error('Database error during driver signup:', err.message);
+                    return res.status(500).json({ message: 'Database error' });
+                }
+                res.status(201).json({ message: 'Driver signup successful', userId: results.insertId });
+            }
+        );
+    } catch (error) {
+        console.error('Error during driver signup:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 
 // User Login
 router.post('/login', async (req, res) => {

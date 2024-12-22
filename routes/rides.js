@@ -57,58 +57,91 @@ router.post('/preview', authenticateToken, async (req, res) => {
 router.post('/request', authenticateToken, async (req, res) => {
     const { pickupLocation, destination } = req.body;
     const riderId = req.user.id;
+    const userRole = req.user.role;
+
+    // Check if the user is a rider
+    if (userRole !== 'rider') {
+        return res.status(403).json({ message: 'Forbidden: Only riders can request rides' });
+    }
 
     console.log(`Requesting ride from ${pickupLocation} to ${destination} by Rider ID: ${riderId}`);
 
     try {
-        // Call Google Distance Matrix API
-        const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
-            params: {
-                origins: pickupLocation,
-                destinations: destination,
-                key: process.env.GOOGLE_MAPS_API_KEY,
-            },
-        });
+        // Check if the rider already has a ride in progress
+        const checkQuery = 'SELECT id FROM rides WHERE rider_id = ? AND status IN (?, ?, ?)';
+        const statuses = ['requested', 'accepted', 'in_progress'];
 
-        const data = response.data;
-
-        // Check for valid response
-        if (data.status !== 'OK' || data.rows[0].elements[0].status !== 'OK') {
-            return res.status(400).json({ message: 'Unable to calculate distance. Please check locations.' });
-        }
-
-        const distanceInMeters = data.rows[0].elements[0].distance.value; // Distance in meters
-        const distanceInKm = distanceInMeters / 1000; // Convert to kilometers
-        const baseFare = 2.5; // Example base fare
-        const farePerKm = 1.2; // Example fare per kilometer
-        const estimatedFare = baseFare + distanceInKm * farePerKm;
-
-        console.log(`Calculated distance: ${distanceInKm.toFixed(2)} km, Estimated Fare: $${estimatedFare.toFixed(2)}`);
-
-        // Insert the ride into the database
-        db.query(
-            'INSERT INTO rides (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [pickupLocation, destination, riderId, distanceInKm, estimatedFare, 'requested', 'pending'],
-            (err, results) => {
-                if (err) {
-                    console.error('Database error while requesting ride:', err.message);
-                    return res.status(500).json({ message: 'Database error' });
-                }
-
-                console.log('Ride successfully requested with ID:', results.insertId);
-                res.status(201).json({
-                    message: 'Ride requested successfully',
-                    rideId: results.insertId,
-                    distance: `${distanceInKm.toFixed(2)} km`,
-                    estimatedFare: `$${estimatedFare.toFixed(2)}`,
-                });
+        db.query(checkQuery, [riderId, ...statuses], (err, results) => {
+            if (err) {
+                console.error('Error checking existing rides:', err.message);
+                return res.status(500).json({ message: 'Database error' });
             }
-        );
+
+            if (results.length > 0) {
+                return res.status(400).json({ message: 'unable to request new ride' });
+            }
+
+            // Call Google Distance Matrix API
+            axios
+                .get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+                    params: {
+                        origins: pickupLocation,
+                        destinations: destination,
+                        key: process.env.GOOGLE_MAPS_API_KEY,
+                    },
+                })
+                .then((response) => {
+                    const data = response.data;
+
+                    // Check for valid response
+                    if (data.status !== 'OK' || data.rows[0].elements[0].status !== 'OK') {
+                        return res.status(400).json({ message: 'Unable to calculate distance. Please check locations.' });
+                    }
+
+                    const distanceInMeters = data.rows[0].elements[0].distance.value; // Distance in meters
+                    const distanceInKm = distanceInMeters / 1000; // Convert to kilometers
+                    const baseFare = 2.5; // Example base fare
+                    const farePerKm = 1.2; // Example fare per kilometer
+                    const estimatedFare = baseFare + distanceInKm * farePerKm;
+
+                    console.log(
+                        `Calculated distance: ${distanceInKm.toFixed(
+                            2
+                        )} km, Estimated Fare: $${estimatedFare.toFixed(2)}`
+                    );
+
+                    // Insert the ride into the database
+                    db.query(
+                        'INSERT INTO rides (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [pickupLocation, destination, riderId, distanceInKm, estimatedFare, 'requested', 'pending'],
+                        (err, results) => {
+                            if (err) {
+                                console.error('Database error while requesting ride:', err.message);
+                                return res.status(500).json({ message: 'Database error' });
+                            }
+
+                            console.log('Ride successfully requested with ID:', results.insertId);
+                            res.status(201).json({
+                                message: 'Ride requested successfully',
+                                rideId: results.insertId,
+                                distance: `${distanceInKm.toFixed(2)} km`,
+                                estimatedFare: `$${estimatedFare.toFixed(2)}`,
+                            });
+                        }
+                    );
+                })
+                .catch((error) => {
+                    console.error('Error calling Distance Matrix API:', error.message);
+                    res.status(500).json({ message: 'Error calculating distance.' });
+                });
+        });
     } catch (error) {
-        console.error('Error calculating distance or requesting ride:', error.message);
+        console.error('Error processing ride request:', error.message);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+
 
 
 
