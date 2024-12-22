@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const authenticateToken = require('./middleware');
+const { authenticateToken, verifyDriver } = require('./middleware');
 const axios = require('axios');
 const { getWeekStartAndEnd } = require('../dateUtils');
 const stripe = require('stripe')('sk_test_51QUBlfL02n57NqWa21vCRIFtWiWRVkRNBGUkGjyRRfhORqzoTGQNHEu9tULCtUXdcD9N6tGurD8zBtjHVb5zjF7n00DB3wwYp0');
+
 
 router.post('/preview', authenticateToken, async (req, res) => {
     const { pickupLocation, destination } = req.body;
@@ -146,28 +147,51 @@ router.post('/request', authenticateToken, async (req, res) => {
 
 
 // View Available Rides
-router.get('/available', (req, res) => {
+router.get('/available', authenticateToken, verifyDriver, (req, res) => {
+    // Ensure the user is a driver
+    if (req.user.role !== 'driver') {
+        return res.status(403).json({ message: 'Forbidden: Only drivers can view available rides.' });
+    }
+
     db.query('SELECT * FROM rides WHERE status = "requested"', (err, results) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
+        if (err) {
+            console.error('Database error while fetching available rides:', err.message);
+            return res.status(500).json({ message: 'Database error' });
+        }
         res.json(results);
     });
 });
 
+router.post('/accept', authenticateToken, verifyDriver, (req, res) => {
+  
+});
+
 // Accept a Ride
-router.post('/accept', authenticateToken, (req, res) => {
+router.post('/accept', authenticateToken, verifyDriver, (req, res) => {
     const { rideId } = req.body;
     const driverId = req.user.id;
+
+    // Ensure the user is a driver
+    if (req.user.role !== 'driver') {
+        return res.status(403).json({ message: 'Forbidden: Only drivers can accept rides.' });
+    }
 
     db.query(
         'UPDATE rides SET status = "accepted", driver_id = ? WHERE id = ? AND status = "requested"',
         [driverId, rideId],
         (err, results) => {
-            if (err) return res.status(500).json({ message: 'Database error' });
-            if (results.affectedRows === 0) return res.status(404).json({ message: 'Ride not found or already accepted' });
-            res.json({ message: 'Ride accepted', rideId });
+            if (err) {
+                console.error('Database error while accepting ride:', err.message);
+                return res.status(500).json({ message: 'Database error' });
+            }
+            if (results.affectedRows === 0) {
+                return res.status(404).json({ message: 'Ride not found or already accepted.' });
+            }
+            res.json({ message: 'Ride accepted successfully.', rideId });
         }
     );
 });
+
 
 // Cancel a Ride
 router.post('/cancel', authenticateToken, (req, res) => {
@@ -437,5 +461,30 @@ router.get('/history', authenticateToken, (req, res) => {
         res.json(results.length ? results : { message: 'No ride history available.' });
     });
 });
+
+//verify driver
+router.post('/driver-signup', async (req, res) => {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    db.query(
+        'INSERT INTO users (username, email, password, role, verified) VALUES (?, ?, ?, ?, ?)',
+        [username, email, hashedPassword, 'driver', false], // Default verified to false
+        (err, results) => {
+            if (err) {
+                console.error('Error inserting driver:', err.message);
+                return res.status(500).json({ message: 'Database error' });
+            }
+
+            res.status(201).json({ message: 'Driver registered successfully. Await admin verification.' });
+        }
+    );
+});
+
 
 module.exports = router;

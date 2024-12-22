@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 
+// Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -13,4 +14,12 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-module.exports = authenticateToken;
+// Driver Verification Middleware
+const verifyDriver = (req, res, next) => {
+    if (req.user.role === 'driver' && !req.user.verified) {
+        return res.status(403).json({ message: 'Your account has not been verified by an admin.' });
+    }
+    next();
+};
+
+module.exports = { authenticateToken, verifyDriver };
