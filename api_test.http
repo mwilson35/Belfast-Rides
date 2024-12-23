@@ -1,2 +1,9 @@
-GET http://localhost:3000/driver/earnings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwicm9sZSI6ImRyaXZlciIsImlhdCI6MTczNDgwNjI0MiwiZXhwIjoxNzM0ODA5ODQyfQ.ZKxL3zNKA-_vyktademrO2ld59ji0jzQohKE9WWF_T0
+POST http://localhost:3000/auth/create-admin
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjAsInJvbGUiOiJhZG1pbiIsImlhdCI6MTczNDk4MjMyNiwiZXhwIjoxNzM0OTg1OTI2fQ.yEnob73FfE_cqILCG9TqTjZRmu3k60_iJ-07Lu-FHwY
+
+{
+    "username": "newAdmin",
+    "email": "newadmin@example.com",
+    "password": "secureNewAdminPassword"
+}
