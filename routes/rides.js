@@ -161,36 +161,50 @@ router.get('/available', authenticateToken, verifyDriver, (req, res) => {
         res.json(results);
     });
 });
-
-router.post('/accept', authenticateToken, verifyDriver, (req, res) => {
-  
-});
-
 // Accept a Ride
-router.post('/accept', authenticateToken, verifyDriver, (req, res) => {
+router.post('/accept', authenticateToken, verifyDriver, async (req, res) => {
+    console.log('Accept endpoint hit'); // Debugging
+
     const { rideId } = req.body;
     const driverId = req.user.id;
 
-    // Ensure the user is a driver
-    if (req.user.role !== 'driver') {
-        return res.status(403).json({ message: 'Forbidden: Only drivers can accept rides.' });
+    if (!rideId) {
+        console.log('Missing rideId in request body:', req.body); // Debugging
+        return res.status(400).json({ message: 'rideId is required' });
     }
 
-    db.query(
-        'UPDATE rides SET status = "accepted", driver_id = ? WHERE id = ? AND status = "requested"',
-        [driverId, rideId],
-        (err, results) => {
-            if (err) {
-                console.error('Database error while accepting ride:', err.message);
-                return res.status(500).json({ message: 'Database error' });
+    console.log(`Attempting to accept ride with ID: ${rideId} by driver: ${driverId}`); // Debugging
+
+    try {
+        db.query(
+            'UPDATE rides SET status = "accepted", driver_id = ? WHERE id = ? AND status = "requested"',
+            [driverId, rideId],
+            (err, results) => {
+                if (err) {
+                    console.error('Database error while accepting ride:', err.message); // Debugging
+                    return res.status(500).json({ message: 'Database error' });
+                }
+
+                console.log('Database update results:', results); // Debugging
+
+                if (results.affectedRows === 0) {
+                    console.log(`Ride not found or already accepted: ID ${rideId}`); // Debugging
+                    return res.status(404).json({ message: 'Ride not found or already accepted.' });
+                }
+
+                res.json({ message: 'Ride accepted successfully.', rideId });
             }
-            if (results.affectedRows === 0) {
-                return res.status(404).json({ message: 'Ride not found or already accepted.' });
-            }
-            res.json({ message: 'Ride accepted successfully.', rideId });
-        }
-    );
+        );
+    } catch (error) {
+        console.error('Unexpected error in /accept endpoint:', error.message); // Debugging
+        res.status(500).json({ message: 'Unexpected server error.' });
+    }
 });
+
+
+
+
+
 
 
 // Cancel a Ride
@@ -462,7 +476,7 @@ router.get('/history', authenticateToken, (req, res) => {
     });
 });
 
-//verify driver
+//driver signup
 router.post('/driver-signup', async (req, res) => {
     const { username, email, password } = req.body;
 
@@ -485,6 +499,44 @@ router.post('/driver-signup', async (req, res) => {
         }
     );
 });
+
+// Verify Driver (Admin Only)
+router.post('/verify-driver', authenticateToken, async (req, res) => {
+    const { driverId } = req.body;
+
+    // Ensure the user making the request is an admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Admin access only.' });
+    }
+
+    if (!driverId) {
+        return res.status(400).json({ message: 'Driver ID is required.' });
+    }
+
+    try {
+        // Update the driver's verified status
+        db.query(
+            'UPDATE users SET verified = ? WHERE id = ? AND role = ?',
+            [true, driverId, 'driver'],
+            (err, results) => {
+                if (err) {
+                    console.error('Error verifying driver:', err.message);
+                    return res.status(500).json({ message: 'Database error during verification.' });
+                }
+
+                if (results.affectedRows === 0) {
+                    return res.status(404).json({ message: 'Driver not found or already verified.' });
+                }
+
+                res.json({ message: 'Driver verified successfully.', driverId });
+            }
+        );
+    } catch (error) {
+        console.error('Error during driver verification:', error.message);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+});
+
 
 
 module.exports = router;

@@ -6,30 +6,32 @@ const router = express.Router();
 
 // User Signup
 router.post('/signup', async (req, res) => {
-    const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-        return res.status(400).json({ message: 'All fields are required.' });
-    }
-
     try {
+        const { username, email, password } = req.body;
+        if (!username || !email || !password) {
+            console.log('Missing fields in signup:', { username, email, password });
+            return res.status(400).json({ message: 'All fields are required.' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         db.query(
             'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-            [username, email, hashedPassword, 'rider'], // Default role is "rider"
+            [username, email, hashedPassword, 'rider'],
             (err, results) => {
                 if (err) {
-                    console.error('Database error during signup:', err.message);
+                    console.error('Error during user insertion:', err.message);
                     return res.status(500).json({ message: 'Database error' });
                 }
                 res.status(201).json({ message: 'Signup successful', userId: results.insertId });
             }
         );
     } catch (error) {
-        console.error('Error during signup:', error.message);
+        console.error('Unexpected error during signup:', error.message);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+
 
 //Driver Signup
 router.post('/driver-signup', async (req, res) => {
@@ -88,12 +90,19 @@ router.post('/login', async (req, res) => {
         }
 
         // Generate a JWT token
-        const token = jwt.sign({ id: user.id, role: user.role }, 'your_secret_key', { expiresIn: '1h' });
+        const token = jwt.sign(
+            { id: user.id, role: user.role, verified: user.verified }, // Includes the verified field
+            'your_secret_key',
+            { expiresIn: '1h' }
+        );
+
         console.log('Login successful, token generated:', token);
 
         res.json({ message: 'Login successful', token });
     });
 });
+
+
 
 // Admin Account Creation (Restricted Use)
 // Import authenticateToken middleware
