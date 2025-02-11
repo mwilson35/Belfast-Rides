@@ -1,7 +1,7 @@
-### Upload a driver's profile photo
-POST http://localhost:3000/drivers/uploadDocument
+### Upload a single document (e.g., profile photo)
+POST http://localhost:3000/documents/uploadDocument
 Content-Type: multipart/form-data; boundary=---011000010111000001101001
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzM5MjkzODU0LCJleHAiOjE3MzkyOTc0NTR9.z9glXl4QHOiSM1a6KONN8bTt1nbEbYDI11Qpi77BAg8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzM5Mjk4NjkwLCJleHAiOjE3MzkzMDIyOTB9.2sMzf7aOGW1fDFkiI1knUeAJ5LesrftG98YACOglm-8
 
 -----011000010111000001101001
 Content-Disposition: form-data; name="document"; filename="testimage.jpg"
