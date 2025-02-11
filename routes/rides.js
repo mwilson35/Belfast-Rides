@@ -451,8 +451,8 @@ router.post('/payment', authenticateToken, (req, res) => {
 
 
 
-// At the top of your file (adjust the path if needed)
-const { getWeekStartAndEnd } = require('./dateUtils'); 
+
+
 
 // Fetch Weekly Earnings
 router.get('/earnings', authenticateToken, (req, res) => {

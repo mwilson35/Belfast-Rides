@@ -1,2 +1,10 @@
-GET http://localhost:3000/driver/earnings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzM4OTU2NDMwLCJleHAiOjE3Mzg5NjAwMzB9.CMKH1GqXYtQd46AZhim_MNfTELMhweAOc0qBgPL_bBI
+
+POST http://localhost:3000/drivers/uploadDocument
+Content-Type: multipart/form-data; boundary=---011000010111000001101001
+
+-----011000010111000001101001
+Content-Disposition: form-data; name="profilePhoto"; filename="testimage.jpg"
+Content-Type: image/jpeg
+
+< ./images/testimage.jpg
+-----011000010111000001101001--

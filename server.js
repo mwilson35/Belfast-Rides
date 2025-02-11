@@ -5,9 +5,14 @@ const axios = require('axios');
 const authRoutes = require('./routes/auth'); // Import auth routes
 const ridesRoutes = require('./routes/rides'); // Import ride management routes
 const db = require('./db'); // Import database connection
+const driverDocumentsRouter = require('./routes/driverDocuments');
+
 // Middleware to parse incoming JSON data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Add support for URL-encoded bodies
+app.use('/drivers', driverDocumentsRouter);
+
+
 
 
 const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
