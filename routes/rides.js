@@ -22,14 +22,19 @@ router.post('/preview', authenticateToken, async (req, res) => {
             params: {
                 origins: pickupLocation,
                 destinations: destination,
-                key: process.env.GOOGLE_MAPS_API_KEY
+                key: process.env.GOOGLE_MAPS_API_KEY,
+                mode: 'driving'
             }
         });
 
         const data = response.data;
+        console.log('Google Maps API response:', JSON.stringify(data, null, 2));
 
-        if (data.rows[0]?.elements[0]?.status !== 'OK') {
-            return res.status(400).json({ message: 'Unable to calculate distance and duration.' });
+        // Check the status of the element
+        const elementStatus = data.rows[0]?.elements[0]?.status;
+        if (elementStatus !== 'OK') {
+            const errorMessage = data.error_message || `Status from API: ${elementStatus}`;
+            return res.status(400).json({ message: errorMessage || 'Unable to calculate distance and duration.' });
         }
 
         const distance = data.rows[0].elements[0].distance.value / 1000; // Convert meters to kilometers
@@ -40,27 +45,27 @@ router.post('/preview', authenticateToken, async (req, res) => {
         const farePerKm = 1.2;
         const estimatedFare = (baseFare + distance * farePerKm).toFixed(2);
 
-        // Respond with preview data
+        // Respond with preview data (using the pound sign for currency)
         res.json({
             pickupLocation,
             destination,
             distance: `${distance.toFixed(2)} km`,
             duration,
-            estimatedFare: `$${estimatedFare}`
+            estimatedFare: `£${estimatedFare}`
         });
     } catch (error) {
-        console.error('Error during ride preview:', error.message);
+        console.error('Error during ride preview:', error.response?.data || error.message);
         res.status(500).json({ message: 'Failed to preview ride.' });
     }
 });
 
-// Request a Ride
+//request a ride
 router.post('/request', authenticateToken, async (req, res) => {
     const { pickupLocation, destination } = req.body;
     const riderId = req.user.id;
     const userRole = req.user.role;
 
-    // Check if the user is a rider
+    // Only riders can request rides
     if (userRole !== 'rider') {
         return res.status(403).json({ message: 'Forbidden: Only riders can request rides' });
     }
@@ -79,62 +84,76 @@ router.post('/request', authenticateToken, async (req, res) => {
             }
 
             if (results.length > 0) {
-                return res.status(400).json({ message: 'unable to request new ride' });
+                return res.status(400).json({ message: 'Unable to request new ride' });
             }
 
             // Call Google Distance Matrix API
-            axios
-                .get('https://maps.googleapis.com/maps/api/distancematrix/json', {
-                    params: {
-                        origins: pickupLocation,
-                        destinations: destination,
-                        key: process.env.GOOGLE_MAPS_API_KEY,
-                    },
-                })
-                .then((response) => {
-                    const data = response.data;
+            axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+                params: {
+                    origins: pickupLocation,
+                    destinations: destination,
+                    key: process.env.GOOGLE_MAPS_API_KEY,
+                    mode: 'driving'
+                },
+            })
+            .then((response) => {
+                const data = response.data;
+                // Log the full API response for debugging
+                console.log('Google Distance Matrix API response:', JSON.stringify(data, null, 2));
 
-                    // Check for valid response
-                    if (data.status !== 'OK' || data.rows[0].elements[0].status !== 'OK') {
-                        return res.status(400).json({ message: 'Unable to calculate distance. Please check locations.' });
-                    }
+                // Check for valid overall API status
+                if (data.status !== 'OK') {
+                    console.error('Distance Matrix API returned error status:', data.status);
+                    return res.status(400).json({ message: 'Unable to calculate distance. Please check locations.' });
+                }
 
-                    const distanceInMeters = data.rows[0].elements[0].distance.value; // Distance in meters
-                    const distanceInKm = distanceInMeters / 1000; // Convert to kilometers
-                    const baseFare = 2.5; // Example base fare
-                    const farePerKm = 1.2; // Example fare per kilometer
-                    const estimatedFare = baseFare + distanceInKm * farePerKm;
+                // Validate that the response has the expected structure
+                if (!data.rows || !data.rows[0] || !data.rows[0].elements || !data.rows[0].elements[0]) {
+                    console.error('Unexpected API response structure:', data);
+                    return res.status(400).json({ message: 'Unexpected API response structure.' });
+                }
 
-                    console.log(
-                        `Calculated distance: ${distanceInKm.toFixed(
-                            2
-                        )} km, Estimated Fare: $${estimatedFare.toFixed(2)}`
-                    );
+                // Check if the specific element returned a valid result
+                const elementStatus = data.rows[0].elements[0].status;
+                if (elementStatus !== 'OK') {
+                    console.error('API element status not OK:', elementStatus);
+                    const errorMessage = data.error_message || 'Unable to calculate distance. Please check locations.';
+                    return res.status(400).json({ message: errorMessage });
+                }
 
-                    // Insert the ride into the database
-                    db.query(
-                        'INSERT INTO rides (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        [pickupLocation, destination, riderId, distanceInKm, estimatedFare, 'requested', 'pending'],
-                        (err, results) => {
-                            if (err) {
-                                console.error('Database error while requesting ride:', err.message);
-                                return res.status(500).json({ message: 'Database error' });
-                            }
+                // Extract distance and calculate fare
+                const distanceInMeters = data.rows[0].elements[0].distance.value; // in meters
+                const distanceInKm = distanceInMeters / 1000; // convert to kilometers
+                const baseFare = 2.5; // Base fare
+                const farePerKm = 1.2; // Fare per kilometer
+                const estimatedFare = baseFare + distanceInKm * farePerKm;
 
-                            console.log('Ride successfully requested with ID:', results.insertId);
-                            res.status(201).json({
-                                message: 'Ride requested successfully',
-                                rideId: results.insertId,
-                                distance: `${distanceInKm.toFixed(2)} km`,
-                                estimatedFare: `$${estimatedFare.toFixed(2)}`,
-                            });
+                console.log(`Calculated distance: ${distanceInKm.toFixed(2)} km, Estimated Fare: £${estimatedFare.toFixed(2)}`);
+
+                // Insert the ride into the database
+                db.query(
+                    'INSERT INTO rides (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    [pickupLocation, destination, riderId, distanceInKm, estimatedFare, 'requested', 'pending'],
+                    (err, results) => {
+                        if (err) {
+                            console.error('Database error while requesting ride:', err.message);
+                            return res.status(500).json({ message: 'Database error' });
                         }
-                    );
-                })
-                .catch((error) => {
-                    console.error('Error calling Distance Matrix API:', error.message);
-                    res.status(500).json({ message: 'Error calculating distance.' });
-                });
+
+                        console.log('Ride successfully requested with ID:', results.insertId);
+                        res.status(201).json({
+                            message: 'Ride requested successfully',
+                            rideId: results.insertId,
+                            distance: `${distanceInKm.toFixed(2)} km`,
+                            estimatedFare: `£${estimatedFare.toFixed(2)}`,
+                        });
+                    }
+                );
+            })
+            .catch((error) => {
+                console.error('Error calling Distance Matrix API:', error.response ? error.response.data : error.message);
+                res.status(500).json({ message: 'Error calculating distance.' });
+            });
         });
     } catch (error) {
         console.error('Error processing ride request:', error.message);
@@ -432,6 +451,9 @@ router.post('/payment', authenticateToken, (req, res) => {
 
 
 
+// At the top of your file (adjust the path if needed)
+const { getWeekStartAndEnd } = require('./dateUtils'); 
+
 // Fetch Weekly Earnings
 router.get('/earnings', authenticateToken, (req, res) => {
     const driverId = req.user.id;
@@ -453,6 +475,7 @@ router.get('/earnings', authenticateToken, (req, res) => {
         }
     );
 });
+
 
 // View Ride History
 router.get('/history', authenticateToken, (req, res) => {
