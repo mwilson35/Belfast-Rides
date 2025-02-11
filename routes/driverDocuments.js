@@ -1,76 +1,49 @@
-// routes/driverDocuments.js
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const db = require('../db'); // adjust if needed
+const { authenticateToken } = require('./middleware');
 
-// Configure storage for uploaded files.
-// Files will be stored in the "uploads" folder.
+// Configure storage: Files will be stored in the "uploads" folder.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Make sure this folder exists in your project root.
+    cb(null, 'uploads/'); // Ensure this folder exists in your project root.
   },
   filename: (req, file, cb) => {
-    // Create a unique filename using the field name, a timestamp, and a random number.
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-
-// Initialize Multer with the storage configuration.
 const upload = multer({ storage: storage });
 
-// ----------------------------------------------
-// Single File Upload Example
-// This route is for testing a single file upload (e.g., a profile photo).
-// The expected field name is "profilePhoto".
-// ----------------------------------------------
-router.post('/uploadDocument', (req, res) => {
-  // Use upload.single() middleware for a single file upload.
-  upload.single('profilePhoto')(req, res, (err) => {
-    if (err) {
-      console.error('Error uploading file:', err);
-      return res.status(500).json({ message: 'Error uploading file' });
-    }
-    // If upload is successful, return file information.
-    res.json({
-      message: 'File uploaded successfully',
-      file: req.file
-    });
-  });
-});
+router.post('/uploadDocument', authenticateToken, upload.single('document'), (req, res) => {
+  const driverId = req.user.id; // From your auth middleware.
+  const documentType = req.body.documentType || req.query.documentType;
+  if (!documentType) {
+    return res.status(400).json({ message: "documentType is required" });
+  }
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+  const filePath = req.file.path;
 
-// ----------------------------------------------
-// Future Expansion: Multiple File Uploads
-// When you're ready to handle multiple document types (like DVLA license, bank statement, etc.),
-// you can use upload.fields() with an array of field definitions.
-// Example:
-//
-// router.post('/uploadDocuments', (req, res) => {
-//   upload.fields([
-//     { name: 'dvlaElectronicCheck', maxCount: 1 },
-//     { name: 'dvlaPlasticLicense', maxCount: 1 },
-//     { name: 'bankStatement', maxCount: 1 },
-//     { name: 'nationalInsurance', maxCount: 1 },
-//     { name: 'profilePhoto', maxCount: 1 },
-//     { name: 'taxiDriverLicense', maxCount: 1 },
-//     { name: 'vehicleInsuranceCertificate', maxCount: 1 },
-//     { name: 'taxiPlateLicense', maxCount: 1 },
-//     { name: 'vehicleRegistration', maxCount: 1 }
-//   ])(req, res, (err) => {
-//     if (err) {
-//       console.error('Error uploading files:', err);
-//       return res.status(500).json({ message: 'Error uploading files' });
-//     }
-//     res.json({
-//       message: 'Documents uploaded successfully',
-//       files: req.files
-//     });
-//   });
-// });
-//
-// Uncomment and adjust the above code when you're ready to handle multiple file fields.
-// ----------------------------------------------
+  db.query(
+    "INSERT INTO driver_documents (driver_id, document_type, file_path, status) VALUES (?, ?, ?, ?)",
+    [driverId, documentType, filePath, 'pending'],
+    (err, result) => {
+      if (err) {
+        console.error("Error saving document metadata:", err);
+        return res.status(500).json({ message: "Error saving document metadata" });
+      }
+      res.status(201).json({
+        message: "Document uploaded and metadata stored successfully",
+        documentId: result.insertId,
+        file: req.file,
+        documentType: documentType
+      });
+    }
+  );
+});
 
 module.exports = router;
