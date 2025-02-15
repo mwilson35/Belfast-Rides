@@ -1,15 +1,3 @@
-### Upload a single document (e.g., profile photo)
-POST http://localhost:3000/documents/uploadDocument
-Content-Type: multipart/form-data; boundary=---011000010111000001101001
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzM5Mjk4NjkwLCJleHAiOjE3MzkzMDIyOTB9.2sMzf7aOGW1fDFkiI1knUeAJ5LesrftG98YACOglm-8
-
------011000010111000001101001
-Content-Disposition: form-data; name="document"; filename="testimage.jpg"
-Content-Type: image/jpeg
-
-< ./images/testimage.jpg
------011000010111000001101001
-Content-Disposition: form-data; name="documentType"
-
-profilePhoto
------011000010111000001101001--
+### Retrieve average rating for user 30
+GET http://localhost:3000/ratings/30
+Authorization: Bearer <YOUR_TOKEN_HERE>

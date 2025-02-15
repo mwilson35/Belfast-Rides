@@ -6,11 +6,14 @@ const authRoutes = require('./routes/auth'); // Import auth routes
 const ridesRoutes = require('./routes/rides'); // Import ride management routes
 const db = require('./db'); // Import database connection
 const userDocumentsRouter = require('./routes/userDocuments');
+const ratingsRouter = require('./routes/ratings');
+
 
 // Middleware to parse incoming JSON data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // Add support for URL-encoded bodies
 app.use('/documents', userDocumentsRouter);
+app.use('/ratings', ratingsRouter);
 
 
 

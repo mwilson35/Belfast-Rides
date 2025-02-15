@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticateToken, verifyDriver } = require('./middleware');
 const axios = require('axios');
-const { getWeekStartAndEnd } = require('../dateUtils');
+const { getWeekStartAndEnd } = require('../utils/dateUtils');
 const stripe = require('stripe')('sk_test_51QUBlfL02n57NqWa21vCRIFtWiWRVkRNBGUkGjyRRfhORqzoTGQNHEu9tULCtUXdcD9N6tGurD8zBtjHVb5zjF7n00DB3wwYp0');
 
 
@@ -563,3 +563,38 @@ router.post('/verify-driver', authenticateToken, async (req, res) => {
 
 
 module.exports = router;
+
+// Example Stripe Payment Integration 
+
+
+// const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// /**
+//  * Endpoint: POST /create-payment-intent
+//  *
+//  * Expects a JSON body with:
+//  * - rideId: the ID of the ride being paid for.
+//  * - amount: the amount to charge in the smallest currency unit (e.g., cents).
+//  *
+//  * This endpoint creates a PaymentIntent using Stripe and returns the client secret.
+//  */
+// router.post('/create-payment-intent', authenticateToken, async (req, res) => {
+//   try {
+//     const { rideId, amount } = req.body;
+    
+//     // Create a PaymentIntent with the specified amount and currency (e.g., USD).
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount, // Amount in cents (or your smallest currency unit)
+//       currency: 'usd', // Adjust as needed
+//       metadata: { rideId } // Optionally attach metadata for later reference
+//     });
+    
+//     res.status(200).json({
+//       message: 'Payment intent created successfully',
+//       clientSecret: paymentIntent.client_secret
+//     });
+//   } catch (error) {
+//     console.error('Error creating payment intent:', error);
+//     res.status(500).json({ error: 'Failed to create payment intent' });
+//   }
+// });
