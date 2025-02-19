@@ -1,3 +1,2 @@
-### Retrieve accepted ride details including driver rating
-GET http://localhost:3000/rides/accepted-ride-details?rideId=102
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjgsInJvbGUiOiJyaWRlciIsInZlcmlmaWVkIjowLCJpYXQiOjE3Mzk2Mzk1OTcsImV4cCI6MTczOTY0MzE5N30.K_2pOTRzJAmSpC4_wRDKOViXNJ_Lx8uK-bcyrwYGzEw
+GET http://localhost:3000/driver/earnings
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzM5OTkwNzQ0LCJleHAiOjE3Mzk5OTQzNDR9.nixY-8gtvJO5LyZz7PSsoZvRO0Z8l8pMe04vRW7Z2-k
