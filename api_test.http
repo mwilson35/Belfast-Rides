@@ -1,7 +1,2 @@
-POST http://localhost:3000/rides/complete
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzEsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQwMTQ0NDIyLCJleHAiOjE3NDAxNDgwMjJ9.Ke4qXYMWr9eyOcOyFJhWqvz4wPDDf9IuRf78to1tK_A
-Content-Type: application/json
-
-{
-    "rideId": 107
-}
+GET http://localhost:3000/ratings/31
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjAsInJvbGUiOiJhZG1pbiIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDAyMzg5NjgsImV4cCI6MTc0MDI0MjU2OH0.AmOAqRHeb43zTf12sErqx8Wp7SJBu5kZFaI6mCKrquE

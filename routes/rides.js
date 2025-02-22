@@ -19,6 +19,7 @@ const earningsController = require('../controllers/earningsController');
 const rideHistoryController = require('../controllers/rideHistoryController');
 const driverSignupController = require('../controllers/driverSignupController');
 const driverVerificationController = require('../controllers/driverVerificationController');
+const ratingController = require('../controllers/ratingController');
 
 //ride preview 
 router.post('/preview', authenticateToken, ridePreviewController.previewRide);
