@@ -20,6 +20,7 @@ const rideHistoryController = require('../controllers/rideHistoryController');
 const driverSignupController = require('../controllers/driverSignupController');
 const driverVerificationController = require('../controllers/driverVerificationController');
 const ratingController = require('../controllers/ratingController');
+const rideStartController = require('../controllers/rideStartController');
 
 //ride preview 
 router.post('/preview', authenticateToken, ridePreviewController.previewRide);
@@ -33,6 +34,8 @@ router.post('/accept', authenticateToken, verifyDriver, rideAcceptController.acc
 router.get('/accepted-ride-details', authenticateToken, rideAcceptedDetailsController.getAcceptedRideDetails);
 //cancel a ride 
 router.post('/cancel', authenticateToken, rideCancelController.cancelRide);
+//start ride
+router.post('/start', authenticateToken, verifyDriver, rideStartController.startRide);
 //payment
 router.post('/payment', authenticateToken, ridePaymentController.processPayment);
 //confirm payment
