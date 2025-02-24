@@ -1,3 +1,4 @@
+const cors = require('cors');
 const express = require('express'); // Import express
 const app = express(); // Initialize express app
 require('dotenv').config();
@@ -9,6 +10,9 @@ const userDocumentsRouter = require('./routes/userDocuments');
 const ratingsRouter = require('./routes/ratings');
 const http = require('http'); // For Socket.IO integration
 const { Server } = require('socket.io');
+
+app.use(cors());
+
 
 // Middleware to parse incoming JSON data and URL-encoded bodies
 app.use(express.json());
@@ -167,7 +171,7 @@ io.on('connection', (socket) => {
   
 
 // Start the server using the HTTP server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });

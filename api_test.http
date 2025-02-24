@@ -1,7 +1,7 @@
-POST http://localhost:3000/rides/complete
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQwMzM2MDA5LCJleHAiOjE3NDAzMzk2MDl9.oNBneevDUtBiltpCNW8D44gvpCutpcx8VaITwFXEaho
+POST http://localhost:5000/auth/login
 Content-Type: application/json
 
 {
-    "rideId": 112
+    "username": "newdriver12",
+    "password": "securePassword123"
 }
