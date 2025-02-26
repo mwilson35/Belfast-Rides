@@ -1,2 +1,7 @@
-http://localhost:5000/test-notification
+POST http://localhost:5000/rides/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQwNTkyMTU3LCJleHAiOjE3NDA1OTU3NTd9.aPfg_yf9iu_HGZY6vCyhBpQ5n6x9vLVOJgwfXJcNCFI
+Content-Type: application/json
 
+{
+    "rideId": 116
+}

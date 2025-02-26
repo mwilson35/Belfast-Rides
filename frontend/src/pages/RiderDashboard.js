@@ -4,7 +4,8 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import MapDisplay from '../components/MapDisplay';
 import DocumentUpload from '../components/DocumentUpload';
-import Notifications from '../components/Notifications'; // <-- Import the Notifications component
+import Notifications from '../components/Notifications';
+import RatingModal from '../components/RatingModal';
 
 const RiderDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -13,6 +14,8 @@ const RiderDashboard = () => {
   const [ridePreview, setRidePreview] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
   const [notification, setNotification] = useState('');
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [currentRideForRating, setCurrentRideForRating] = useState(null);
 
   useEffect(() => {
     fetchRideHistory();
@@ -60,22 +63,10 @@ const RiderDashboard = () => {
       setNotification('Failed to request ride.');
     }
   };
-  const handleCancelRide = async (rideId) => {
-    try {
-      await api.post('/rides/cancel', { rideId });
-      setNotification(`Ride ${rideId} canceled successfully.`);
-      fetchRideHistory();
-    } catch (error) {
-      console.error('Error canceling ride:', error);
-      setNotification('Failed to cancel ride.');
-    }
-  };
-  
 
   return (
     <div>
       <Navbar />
-      {/* Insert Notifications right after the Navbar */}
       <Notifications />
       <div style={{ padding: '1rem' }}>
         <h1>Rider Dashboard</h1>
@@ -97,7 +88,6 @@ const RiderDashboard = () => {
         <section className="documents-section">
           <h2>Your Documents</h2>
           <DocumentUpload documentType="profilePhoto" />
-          {/* You can add additional DocumentUpload components for other document types */}
         </section>
     
         {/* Ride Request Section */}
@@ -142,27 +132,32 @@ const RiderDashboard = () => {
           <MapDisplay ridePreview={ridePreview} />
         </section>
 
-{/* Ride History Section */}
-<section className="ride-history-section">
-  <h2>Your Ride History</h2>
-  {rideHistory && rideHistory.length ? (
-    <ul>
-      {rideHistory.map((ride) => (
-        <li key={ride.id}>
-          {ride.pickup_location} to {ride.destination} - Status: {ride.status}
-          {(ride.status === 'requested' || ride.status === 'accepted') && (
-            <button onClick={() => handleCancelRide(ride.id)} style={{ marginLeft: '1rem' }}>
-              Cancel Ride
-            </button>
+        {/* Ride History Section */}
+        <section className="ride-history-section">
+          <h2>Your Ride History</h2>
+          {rideHistory && rideHistory.length ? (
+            <ul>
+              {rideHistory.map((ride) => (
+                <li key={ride.id}>
+                  {ride.pickup_location} to {ride.destination} - Status: {ride.status}
+                  {ride.status === 'completed' && (
+                    <button 
+                      onClick={() => {
+                        setCurrentRideForRating(ride);
+                        setShowRatingModal(true);
+                      }}
+                      style={{ marginLeft: '1rem' }}
+                    >
+                      Rate Driver
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No ride history available.</p>
           )}
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p>No ride history available.</p>
-  )}
-</section>
-
+        </section>
 
         {/* Notification Section */}
         {notification && (
@@ -171,6 +166,19 @@ const RiderDashboard = () => {
           </section>
         )}
       </div>
+
+      {/* Rating Modal */}
+      {showRatingModal && currentRideForRating && (
+        <RatingModal 
+          rideId={currentRideForRating.id}
+          rateeId={currentRideForRating.driver_id} // Assuming driver_id exists in the ride object
+          onClose={() => setShowRatingModal(false)}
+          onRatingSubmitted={() => {
+            // Optionally refresh ride history or display a message
+            fetchRideHistory();
+          }}
+        />
+      )}  
     </div>
   );
 };
