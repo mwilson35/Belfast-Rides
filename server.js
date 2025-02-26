@@ -5,6 +5,7 @@ require('dotenv').config();
 const axios = require('axios');
 const authRoutes = require('./routes/auth'); // Import auth routes
 const ridesRoutes = require('./routes/rides'); // Import ride management routes
+const usersRoutes = require('./routes/users'); // Import users routes
 const db = require('./db'); // Import database connection
 const userDocumentsRouter = require('./routes/userDocuments');
 const ratingsRouter = require('./routes/ratings');
@@ -13,12 +14,12 @@ const { Server } = require('socket.io');
 
 app.use(cors());
 
-
 // Middleware to parse incoming JSON data and URL-encoded bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Register routes for documents and ratings
+// Register routes
+app.use('/users', usersRoutes);
 app.use('/documents', userDocumentsRouter);
 app.use('/ratings', ratingsRouter);
 
@@ -150,25 +151,20 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
   
-    // Listen for driver location updates (existing code)
     socket.on('driverLocationUpdate', (data) => {
       console.log("Driver location update:", data);
       io.emit('locationUpdate', data);
     });
   
-    // Listen for a driver arrival event
     socket.on('driverArrived', (data) => {
       console.log("Driver has arrived:", data);
-      // Ideally, emit this only to the rider associated with this ride.
-      // For now, we'll broadcast to everyone for testing:
       io.emit('driverArrived', data);
     });
   
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id}`);
     });
-  });
-  
+});
 
 // Start the server using the HTTP server
 const PORT = process.env.PORT || 5000;

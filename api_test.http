@@ -1,7 +1,2 @@
-POST http://localhost:5000/auth/login
-Content-Type: application/json
+http://localhost:5000/test-notification
 
-{
-    "username": "newdriver12",
-    "password": "securePassword123"
-}

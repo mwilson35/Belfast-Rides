@@ -1,22 +1,36 @@
 // src/pages/Login.js
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 import api from '../services/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const response = await api.post('/auth/login', { username, password });
-      localStorage.setItem('token', response.data.token);
+      const token = response.data.token;
+      localStorage.setItem('token', token);
       setMessage('Login successful!');
-      // Redirect based on user role; for example, assume rider:
-      window.location.href = '/rider-dashboard';
+      // Decode the token to extract the role
+      const decoded = jwtDecode(token);
+      console.log("Decoded token:", decoded);
+      if (decoded.role === 'driver') {
+        navigate('/driver-dashboard');
+      } else if (decoded.role === 'rider') {
+        navigate('/rider-dashboard');
+      } else if (decoded.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Login failed:", error);
       setMessage('Login failed.');
     }
   };
