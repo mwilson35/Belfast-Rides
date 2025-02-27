@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-// Replace the MapDisplay import with InteractiveMap:
 import InteractiveMap from '../components/InteractiveMap';
 import DocumentUpload from '../components/DocumentUpload';
 import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
+import polyline from 'polyline';
+
+const decodePolyline = (encoded) => {
+  const points = polyline.decode(encoded);
+  return points.map(point => ({ lat: point[0], lng: point[1] }));
+};
 
 const RiderDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -14,6 +19,7 @@ const RiderDashboard = () => {
   const [destination, setDestination] = useState('');
   const [ridePreview, setRidePreview] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
+  const [route, setRoute] = useState(null);
   const [notification, setNotification] = useState('');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
@@ -41,12 +47,25 @@ const RiderDashboard = () => {
       });
   };
 
+  const fetchRoute = async (origin, destination) => {
+    try {
+      const response = await api.get('/get-directions', { params: { origin, destination } });
+      const encodedPolyline = response.data.routes[0].overview_polyline.points;
+      const decodedPath = decodePolyline(encodedPolyline);
+      setRoute(decodedPath);
+    } catch (error) {
+      console.error('Error fetching route:', error);
+      setNotification('Failed to fetch route.');
+    }
+  };
+
   const handlePreviewRide = async (e) => {
     e.preventDefault();
     try {
       const response = await api.post('/rides/preview', { pickupLocation, destination });
       setRidePreview(response.data);
       setNotification('Ride preview loaded.');
+      fetchRoute(pickupLocation, destination);
     } catch (error) {
       console.error('Error previewing ride:', error);
       setNotification('Failed to preview ride.');
@@ -115,7 +134,6 @@ const RiderDashboard = () => {
             </div>
             <button type="submit">Preview Ride</button>
           </form>
-          
           {ridePreview && (
             <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
               <p><strong>Ride Preview:</strong></p>
@@ -130,11 +148,12 @@ const RiderDashboard = () => {
         {/* Map Section */}
         <section className="map-section">
           <h2>Live Map</h2>
-          {/* Replace MapDisplay with InteractiveMap and provide markers as needed */}
-          <InteractiveMap markers={[
-            // Example marker for testing; adjust as needed
-            { id: 1, lat: 54.5973, lng: -5.9301 }
-          ]} />
+          <InteractiveMap 
+            markers={[
+              { id: 'pickup', lat: ridePreview && ridePreview.pickupLat ? ridePreview.pickupLat : 54.5973, lng: ridePreview && ridePreview.pickupLng ? ridePreview.pickupLng : -5.9301 }
+            ]}
+            route={route}
+          />
         </section>
 
         {/* Ride History Section */}
@@ -176,7 +195,7 @@ const RiderDashboard = () => {
       {showRatingModal && currentRideForRating && (
         <RatingModal 
           rideId={currentRideForRating.id}
-          rateeId={currentRideForRating.driver_id} // Ensure this field exists in your ride object
+          rateeId={currentRideForRating.driver_id}
           onClose={() => setShowRatingModal(false)}
           onRatingSubmitted={() => fetchRideHistory()}
         />
