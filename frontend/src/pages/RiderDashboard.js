@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import MapDisplay from '../components/MapDisplay';
+// Replace the MapDisplay import with InteractiveMap:
+import InteractiveMap from '../components/InteractiveMap';
 import DocumentUpload from '../components/DocumentUpload';
 import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
@@ -129,7 +130,11 @@ const RiderDashboard = () => {
         {/* Map Section */}
         <section className="map-section">
           <h2>Live Map</h2>
-          <MapDisplay ridePreview={ridePreview} />
+          {/* Replace MapDisplay with InteractiveMap and provide markers as needed */}
+          <InteractiveMap markers={[
+            // Example marker for testing; adjust as needed
+            { id: 1, lat: 54.5973, lng: -5.9301 }
+          ]} />
         </section>
 
         {/* Ride History Section */}
@@ -171,14 +176,11 @@ const RiderDashboard = () => {
       {showRatingModal && currentRideForRating && (
         <RatingModal 
           rideId={currentRideForRating.id}
-          rateeId={currentRideForRating.driver_id} // Assuming driver_id exists in the ride object
+          rateeId={currentRideForRating.driver_id} // Ensure this field exists in your ride object
           onClose={() => setShowRatingModal(false)}
-          onRatingSubmitted={() => {
-            // Optionally refresh ride history or display a message
-            fetchRideHistory();
-          }}
+          onRatingSubmitted={() => fetchRideHistory()}
         />
-      )}  
+      )}
     </div>
   );
 };
