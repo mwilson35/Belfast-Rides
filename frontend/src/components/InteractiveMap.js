@@ -7,12 +7,10 @@ const containerStyle = {
   height: '400px'
 };
 
-const defaultCenter = {
-  lat: 54.5973, // Belfast City Centre
-  lng: -5.9301
-};
-
 const InteractiveMap = ({ markers, route }) => {
+  // Center the map on the first route coordinate if available, or use a default
+  const defaultCenter = route && route.length > 0 ? route[0] : { lat: 54.5973, lng: -5.9301 };
+
   return (
     <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <GoogleMap
@@ -20,18 +18,32 @@ const InteractiveMap = ({ markers, route }) => {
         center={defaultCenter}
         zoom={12}
       >
-        {markers && markers.map(marker => (
+        {/* Existing markers */}
+        {markers.map((marker) => (
           <Marker key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} />
         ))}
+
+        {/* Render route with improved styling */}
         {route && (
-          <Polyline
-            path={route} // route is an array of {lat, lng} objects
-            options={{
-              strokeColor: '#FF0000',
-              strokeOpacity: 1,
-              strokeWeight: 2,
-            }}
-          />
+          <>
+            <Polyline
+              path={route}
+              options={{
+                strokeColor: '#1E90FF',
+                strokeOpacity: 0.9,
+                strokeWeight: 4,
+              }}
+            />
+            {/* Add markers at the start and end of the route */}
+            <Marker 
+              position={route[0]} 
+              icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png' }} 
+            />
+            <Marker 
+              position={route[route.length - 1]} 
+              icon={{ url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' }} 
+            />
+          </>
         )}
       </GoogleMap>
     </LoadScript>

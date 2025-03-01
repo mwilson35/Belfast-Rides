@@ -23,10 +23,22 @@ const RiderDashboard = () => {
   const [notification, setNotification] = useState('');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
+  const [driverLocation, setDriverLocation] = useState(null);
 
+  // Socket.IO integration for driver tracking
   useEffect(() => {
     fetchRideHistory();
     fetchProfile();
+
+    const socket = require('socket.io-client')('http://localhost:5000');
+    socket.on('locationUpdate', (data) => {
+      console.log('Received locationUpdate event:', data);
+      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
+    });
+    return () => {
+      socket.off('locationUpdate');
+      socket.disconnect();
+    };
   }, []);
 
   const fetchRideHistory = () => {
@@ -83,6 +95,15 @@ const RiderDashboard = () => {
       setNotification('Failed to request ride.');
     }
   };
+
+  // Build markers array only from available live data
+  const markers = [];
+  if (ridePreview && ridePreview.pickupLat && ridePreview.pickupLng) {
+    markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
+  }
+  if (driverLocation) {
+    markers.push(driverLocation);
+  }
 
   return (
     <div>
@@ -148,12 +169,7 @@ const RiderDashboard = () => {
         {/* Map Section */}
         <section className="map-section">
           <h2>Live Map</h2>
-          <InteractiveMap 
-            markers={[
-              { id: 'pickup', lat: ridePreview && ridePreview.pickupLat ? ridePreview.pickupLat : 54.5973, lng: ridePreview && ridePreview.pickupLng ? ridePreview.pickupLng : -5.9301 }
-            ]}
-            route={route}
-          />
+          <InteractiveMap markers={markers} route={route} />
         </section>
 
         {/* Ride History Section */}
