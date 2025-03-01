@@ -25,18 +25,32 @@ const RiderDashboard = () => {
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
 
-  // Socket.IO integration for driver tracking
+  // Socket.IO integration for ride status and driver tracking
   useEffect(() => {
     fetchRideHistory();
     fetchProfile();
 
     const socket = require('socket.io-client')('http://localhost:5000');
+    
     socket.on('locationUpdate', (data) => {
       console.log('Received locationUpdate event:', data);
       setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
     });
+
+    socket.on('driverAccepted', (data) => {
+      console.log('Driver accepted ride:', data);
+      setNotification('Your ride has been accepted!');
+    });
+
+    socket.on('driverArrived', (data) => {
+      console.log('Driver has arrived:', data);
+      setNotification('Your driver has arrived!');
+    });
+
     return () => {
       socket.off('locationUpdate');
+      socket.off('driverAccepted');
+      socket.off('driverArrived');
       socket.disconnect();
     };
   }, []);

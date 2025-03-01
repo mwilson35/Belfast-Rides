@@ -151,6 +151,9 @@ const io = new Server(server, {
   cors: { origin: "*" }
 });
 
+// Attach io to the app so controllers can access it
+app.set('io', io);
+
 io.on('connection', (socket) => {
   console.log(`New client connected: ${socket.id}`);
 
@@ -160,7 +163,7 @@ io.on('connection', (socket) => {
     io.emit('locationUpdate', data);
   });
 
-  // Optionally handle driver arrival events
+  // Handle driver arrival events
   socket.on('driverArrived', (data) => {
     console.log("Driver has arrived:", data);
     io.emit('driverArrived', data);
