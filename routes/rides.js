@@ -21,6 +21,7 @@ const driverSignupController = require('../controllers/driverSignupController');
 const driverVerificationController = require('../controllers/driverVerificationController');
 const ratingController = require('../controllers/ratingController');
 const rideStartController = require('../controllers/rideStartController');
+const rideActiveController = require('../controllers/rideActiveController');
 
 //ride preview 
 router.post('/preview', authenticateToken, ridePreviewController.previewRide);
@@ -50,6 +51,8 @@ router.get('/history', authenticateToken, rideHistoryController.getRideHistory);
 router.post('/driver-signup', driverSignupController.signupDriver);
 //driver verification by admin
 router.post('/verify-driver', authenticateToken, driverVerificationController.verifyDriver);
+//active ride 
+router.get('/active', authenticateToken, rideActiveController.getActiveRide);
 
 module.exports = router;
 

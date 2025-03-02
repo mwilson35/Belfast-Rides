@@ -6,7 +6,7 @@ import InteractiveMap from '../components/InteractiveMap';
 import DocumentUpload from '../components/DocumentUpload';
 import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
-import ChatBox from '../components/ChatBox'; // New ChatBox component
+import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
 
 const decodePolyline = (encoded) => {
@@ -19,7 +19,7 @@ const RiderDashboard = () => {
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
   const [ridePreview, setRidePreview] = useState(null);
-  const [activeRide, setActiveRide] = useState(null); // Active ride state
+  const [activeRide, setActiveRide] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
   const [route, setRoute] = useState(null);
   const [notification, setNotification] = useState('');
@@ -27,36 +27,16 @@ const RiderDashboard = () => {
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
 
-  // Socket.IO integration for ride status and driver tracking
+  // Remove persisted preview/route on mount if no active ride exists
   useEffect(() => {
-    fetchRideHistory();
-    fetchProfile();
-
-    const socket = require('socket.io-client')('http://localhost:5000');
-    
-    socket.on('locationUpdate', (data) => {
-      console.log('Received locationUpdate event:', data);
-      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
-    });
-
-    socket.on('driverAccepted', (data) => {
-      console.log('Driver accepted ride:', data);
-      setNotification('Your ride has been accepted!');
-    });
-
-    socket.on('driverArrived', (data) => {
-      console.log('Driver has arrived:', data);
-      setNotification('Your driver has arrived!');
-    });
-
-    return () => {
-      socket.off('locationUpdate');
-      socket.off('driverAccepted');
-      socket.off('driverArrived');
-      socket.disconnect();
-    };
+    const storedActiveRide = localStorage.getItem('activeRide');
+    if (!storedActiveRide) {
+      localStorage.removeItem('ridePreview');
+      localStorage.removeItem('route');
+    }
   }, []);
 
+  // Fetch ride history
   const fetchRideHistory = () => {
     api.get('/rides/history')
       .then(response => setRideHistory(response.data))
@@ -66,6 +46,7 @@ const RiderDashboard = () => {
       });
   };
 
+  // Fetch user profile
   const fetchProfile = () => {
     api.get('/users/profile')
       .then(response => setProfile(response.data))
@@ -75,6 +56,60 @@ const RiderDashboard = () => {
       });
   };
 
+  // Fetch active ride from backend and clear preview/route if none exists
+  const fetchActiveRide = () => {
+    api.get('/rides/active')
+      .then(response => {
+        console.log('Active ride response:', response.data);
+        if (!response.data) {
+          localStorage.removeItem('ridePreview');
+          localStorage.removeItem('route');
+          setRidePreview(null);
+          setRoute(null);
+        }
+        setActiveRide(response.data);
+        // Optionally, persist active ride to localStorage if you want it to survive refresh
+        if (response.data) {
+          localStorage.setItem('activeRide', JSON.stringify(response.data));
+        } else {
+          localStorage.removeItem('activeRide');
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching active ride:', error);
+      });
+  };
+
+  // Persist ridePreview and route only if needed (optional)
+  useEffect(() => {
+    if (ridePreview) {
+      localStorage.setItem('ridePreview', JSON.stringify(ridePreview));
+    } else {
+      localStorage.removeItem('ridePreview');
+    }
+  }, [ridePreview]);
+
+  useEffect(() => {
+    if (route) {
+      localStorage.setItem('route', JSON.stringify(route));
+    } else {
+      localStorage.removeItem('route');
+    }
+  }, [route]);
+
+  // Load persisted preview and route if present (optional)
+  useEffect(() => {
+    const storedPreview = localStorage.getItem('ridePreview');
+    const storedRoute = localStorage.getItem('route');
+    if (storedPreview) {
+      setRidePreview(JSON.parse(storedPreview));
+    }
+    if (storedRoute) {
+      setRoute(JSON.parse(storedRoute));
+    }
+  }, []);
+
+  // Fetch route for map display
   const fetchRoute = async (origin, destination) => {
     try {
       const response = await api.get('/get-directions', { params: { origin, destination } });
@@ -86,6 +121,39 @@ const RiderDashboard = () => {
       setNotification('Failed to fetch route.');
     }
   };
+
+  // Socket.IO integration for ride status and driver tracking
+  useEffect(() => {
+    fetchRideHistory();
+    fetchProfile();
+    fetchActiveRide();
+
+    const socket = require('socket.io-client')('http://localhost:5000');
+    socket.on('locationUpdate', (data) => {
+      console.log('Received locationUpdate event:', data);
+      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
+      localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
+    });
+    socket.on('driverAccepted', (data) => {
+      console.log('Driver accepted ride:', data);
+      setNotification('Your ride has been accepted!');
+    });
+    socket.on('driverArrived', (data) => {
+      console.log('Driver has arrived:', data);
+      setNotification('Your driver has arrived!');
+    });
+    // Load persisted driver location if available
+    const storedDriverLocation = localStorage.getItem('driverLocation');
+    if (storedDriverLocation) {
+      setDriverLocation(JSON.parse(storedDriverLocation));
+    }
+    return () => {
+      socket.off('locationUpdate');
+      socket.off('driverAccepted');
+      socket.off('driverArrived');
+      socket.disconnect();
+    };
+  }, []);
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
@@ -103,9 +171,9 @@ const RiderDashboard = () => {
   const handleRequestRide = async () => {
     try {
       const response = await api.post('/rides/request', { pickupLocation, destination });
-      setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId}`);
-      setRidePreview(null);
-      setActiveRide(response.data);  // Save active ride so Cancel button appears
+      setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId || response.data.id}`);
+      setRidePreview(null);  // Clear preview since the ride is now requested
+      setActiveRide(response.data);
       fetchRideHistory();
     } catch (error) {
       console.error('Error requesting ride:', error);
@@ -114,16 +182,19 @@ const RiderDashboard = () => {
   };
 
   const handleCancelRide = async () => {
-    // Show confirmation dialog before canceling the ride.
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this ride? A cancellation fee may apply."
-    );
+    const confirmCancel = window.confirm("Are you sure you want to cancel this ride? A cancellation fee may apply.");
     if (!confirmCancel) return;
-
     try {
-      const response = await api.post('/rides/cancel', { rideId: activeRide.rideId });
+      const response = await api.post('/rides/cancel', { rideId: activeRide.rideId || activeRide.id });
       setNotification(`Ride canceled successfully. Cancellation fee: £${response.data.cancellationFee || 0}`);
       setActiveRide(null);
+      localStorage.removeItem('activeRide');
+      localStorage.removeItem('ridePreview');
+      localStorage.removeItem('route');
+      localStorage.removeItem('driverLocation');
+      setRidePreview(null);
+      setRoute(null);
+      setDriverLocation(null);
       fetchRideHistory();
     } catch (error) {
       console.error('Error canceling ride:', error);
@@ -131,7 +202,7 @@ const RiderDashboard = () => {
     }
   };
 
-  // Build markers array only from available live data
+  // Build markers array for the map
   const markers = [];
   if (ridePreview && ridePreview.pickupLat && ridePreview.pickupLng) {
     markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
@@ -201,15 +272,19 @@ const RiderDashboard = () => {
           )}
         </section>
 
-        {/* Active Ride Section */}
-        {activeRide && (
-          <section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-            <h2>Active Ride</h2>
-            <p><strong>Ride ID:</strong> {activeRide.rideId}</p>
-            <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
-            <button onClick={handleCancelRide}>Cancel Ride</button>
-          </section>
-        )}
+        {/* Active Ride Section (always rendered) */}
+        <section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
+          <h2>Active Ride</h2>
+          {activeRide ? (
+            <>
+              <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
+              <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
+              <button onClick={handleCancelRide}>Cancel Ride</button>
+            </>
+          ) : (
+            <p>No active ride currently.</p>
+          )}
+        </section>
 
         {/* Map Section */}
         <section className="map-section">
