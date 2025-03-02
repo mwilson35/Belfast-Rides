@@ -18,6 +18,7 @@ const RiderDashboard = () => {
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
   const [ridePreview, setRidePreview] = useState(null);
+  const [activeRide, setActiveRide] = useState(null); // Active ride state
   const [rideHistory, setRideHistory] = useState([]);
   const [route, setRoute] = useState(null);
   const [notification, setNotification] = useState('');
@@ -103,10 +104,29 @@ const RiderDashboard = () => {
       const response = await api.post('/rides/request', { pickupLocation, destination });
       setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId}`);
       setRidePreview(null);
+      setActiveRide(response.data);  // Save active ride so Cancel button appears
       fetchRideHistory();
     } catch (error) {
       console.error('Error requesting ride:', error);
       setNotification('Failed to request ride.');
+    }
+  };
+
+  const handleCancelRide = async () => {
+    // Confirmation prompt before canceling
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this ride? A cancellation fee may apply."
+    );
+    if (!confirmCancel) return;
+
+    try {
+      const response = await api.post('/rides/cancel', { rideId: activeRide.rideId });
+      setNotification(`Ride canceled successfully. Cancellation fee: £${response.data.cancellationFee || 0}`);
+      setActiveRide(null);
+      fetchRideHistory();
+    } catch (error) {
+      console.error('Error canceling ride:', error);
+      setNotification('Failed to cancel ride.');
     }
   };
 
@@ -179,6 +199,16 @@ const RiderDashboard = () => {
             </div>
           )}
         </section>
+
+        {/* Active Ride Section */}
+        {activeRide && (
+          <section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
+            <h2>Active Ride</h2>
+            <p><strong>Ride ID:</strong> {activeRide.rideId}</p>
+            <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
+            <button onClick={handleCancelRide}>Cancel Ride</button>
+          </section>
+        )}
 
         {/* Map Section */}
         <section className="map-section">
