@@ -6,6 +6,7 @@ import InteractiveMap from '../components/InteractiveMap';
 import DocumentUpload from '../components/DocumentUpload';
 import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
+import ChatBox from '../components/ChatBox'; // New ChatBox component
 import polyline from 'polyline';
 
 const decodePolyline = (encoded) => {
@@ -113,7 +114,7 @@ const RiderDashboard = () => {
   };
 
   const handleCancelRide = async () => {
-    // Confirmation prompt before canceling
+    // Show confirmation dialog before canceling the ride.
     const confirmCancel = window.confirm(
       "Are you sure you want to cancel this ride? A cancellation fee may apply."
     );
@@ -249,6 +250,12 @@ const RiderDashboard = () => {
             <p>{notification}</p>
           </section>
         )}
+
+        {/* Chat Section */}
+        <section className="chat-section" style={{ marginTop: '1rem' }}>
+          <h2>Chat</h2>
+          <ChatBox />
+        </section>
       </div>
 
       {/* Rating Modal */}

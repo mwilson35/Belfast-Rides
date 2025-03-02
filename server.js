@@ -169,11 +169,16 @@ io.on('connection', (socket) => {
     io.emit('driverArrived', data);
   });
 
+  socket.on('chatMessage', (data) => {
+    console.log('Chat message received:', data);
+    // Broadcast the message to all connected clients.
+    io.emit('chatMessage', data);
+  });
+
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
   });
 });
-
 // Start the server on the specified PORT
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
