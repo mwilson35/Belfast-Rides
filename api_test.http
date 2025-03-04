@@ -1,7 +1,7 @@
-POST /rides/test-driver-arrived HTTP/1.1
-Host: localhost:5000
+POST http://localhost:5000/rides/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQxMTA4NTY0LCJleHAiOjE3NDExMTIxNjR9.jTA9dBqcvcketMa7fa3aj31d9-8hT-2EfqJhI7lomQE
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MjgsInJvbGUiOiJyaWRlciIsInZlcmlmaWVkIjowLCJpYXQiOjE3NDExMDM2ODAsImV4cCI6MTc0MTEwNzI4MH0.yejm4u5d13vyHw1k8PzrJ5hvOLWo6qE--6fZ1xYVVGA
-Content-Length: 18
 
-{"rideId":145}
+{
+    "rideId": 146
+}

@@ -26,6 +26,9 @@ app.use('/users', usersRoutes);
 app.use('/documents', userDocumentsRouter);
 app.use('/ratings', ratingsRouter);
 
+// Serve static files from the "uploads" folder
+app.use('/uploads', express.static('uploads'));
+
 // Debug: log your Google Maps API key (remove in production)
 console.log("Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY);
 
@@ -171,7 +174,6 @@ io.on('connection', (socket) => {
 
   socket.on('chatMessage', (data) => {
     console.log('Chat message received:', data);
-    // Broadcast the message to all connected clients.
     io.emit('chatMessage', data);
   });
 
@@ -179,6 +181,7 @@ io.on('connection', (socket) => {
     console.log(`Client disconnected: ${socket.id}`);
   });
 });
+
 // Start the server on the specified PORT
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

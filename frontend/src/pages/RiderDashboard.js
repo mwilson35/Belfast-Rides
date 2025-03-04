@@ -130,32 +130,51 @@ useEffect(() => {
   fetchActiveRide();
 
   const socket = require('socket.io-client')('http://localhost:5000');
+  
   socket.on('locationUpdate', (data) => {
     console.log('Received locationUpdate event:', data);
     setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
     localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
   });
+  
   socket.on('driverAccepted', (data) => {
     console.log('Driver accepted ride:', data);
     setNotification('Your ride has been accepted!');
-    // Update active ride status to "accepted" if an active ride exists.
     setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
   });
+  
   socket.on('driverArrived', (data) => {
     console.log('Driver has arrived:', data);
     setNotification('Your driver has arrived!');
-    // Update active ride status to "arrived" if an active ride exists.
     setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
   });
+  
+  socket.on('rideInProgress', (data) => {
+    console.log('Ride in progress event:', data);
+    setNotification('Your ride is now in progress!');
+    setActiveRide(prev => prev ? { ...prev, status: 'in progress' } : prev);
+  });
+  
+  socket.on('rideCompleted', (data) => {
+    console.log('Ride completed event:', data);
+    setNotification('Your ride is complete!');
+    // You can also clear the active ride or prompt for rating
+    setActiveRide(null);
+    fetchRideHistory();
+  });
+  
   // Load persisted driver location if available
   const storedDriverLocation = localStorage.getItem('driverLocation');
   if (storedDriverLocation) {
     setDriverLocation(JSON.parse(storedDriverLocation));
   }
+  
   return () => {
     socket.off('locationUpdate');
     socket.off('driverAccepted');
     socket.off('driverArrived');
+    socket.off('rideInProgress');
+    socket.off('rideCompleted');
     socket.disconnect();
   };
 }, []);
