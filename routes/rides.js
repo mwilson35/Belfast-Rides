@@ -54,6 +54,7 @@ router.post('/verify-driver', authenticateToken, driverVerificationController.ve
 //active ride 
 router.get('/active', authenticateToken, rideActiveController.getActiveRide);
 
+
 module.exports = router;
 
 // Example Stripe Payment Integration 

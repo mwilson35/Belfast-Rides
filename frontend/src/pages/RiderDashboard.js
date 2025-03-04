@@ -8,6 +8,7 @@ import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
 import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
+import RideStatusTimeline from '../components/RideStatusTimeline';
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
@@ -122,38 +123,43 @@ const RiderDashboard = () => {
     }
   };
 
-  // Socket.IO integration for ride status and driver tracking
-  useEffect(() => {
-    fetchRideHistory();
-    fetchProfile();
-    fetchActiveRide();
+// Socket.IO integration for ride status and driver tracking
+useEffect(() => {
+  fetchRideHistory();
+  fetchProfile();
+  fetchActiveRide();
 
-    const socket = require('socket.io-client')('http://localhost:5000');
-    socket.on('locationUpdate', (data) => {
-      console.log('Received locationUpdate event:', data);
-      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
-      localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
-    });
-    socket.on('driverAccepted', (data) => {
-      console.log('Driver accepted ride:', data);
-      setNotification('Your ride has been accepted!');
-    });
-    socket.on('driverArrived', (data) => {
-      console.log('Driver has arrived:', data);
-      setNotification('Your driver has arrived!');
-    });
-    // Load persisted driver location if available
-    const storedDriverLocation = localStorage.getItem('driverLocation');
-    if (storedDriverLocation) {
-      setDriverLocation(JSON.parse(storedDriverLocation));
-    }
-    return () => {
-      socket.off('locationUpdate');
-      socket.off('driverAccepted');
-      socket.off('driverArrived');
-      socket.disconnect();
-    };
-  }, []);
+  const socket = require('socket.io-client')('http://localhost:5000');
+  socket.on('locationUpdate', (data) => {
+    console.log('Received locationUpdate event:', data);
+    setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
+    localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
+  });
+  socket.on('driverAccepted', (data) => {
+    console.log('Driver accepted ride:', data);
+    setNotification('Your ride has been accepted!');
+    // Update active ride status to "accepted" if an active ride exists.
+    setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
+  });
+  socket.on('driverArrived', (data) => {
+    console.log('Driver has arrived:', data);
+    setNotification('Your driver has arrived!');
+    // Update active ride status to "arrived" if an active ride exists.
+    setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
+  });
+  // Load persisted driver location if available
+  const storedDriverLocation = localStorage.getItem('driverLocation');
+  if (storedDriverLocation) {
+    setDriverLocation(JSON.parse(storedDriverLocation));
+  }
+  return () => {
+    socket.off('locationUpdate');
+    socket.off('driverAccepted');
+    socket.off('driverArrived');
+    socket.disconnect();
+  };
+}, []);
+
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
@@ -274,17 +280,19 @@ const RiderDashboard = () => {
 
         {/* Active Ride Section (always rendered) */}
         <section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-          <h2>Active Ride</h2>
-          {activeRide ? (
-            <>
-              <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
-              <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
-              <button onClick={handleCancelRide}>Cancel Ride</button>
-            </>
-          ) : (
-            <p>No active ride currently.</p>
-          )}
-        </section>
+  <h2>Active Ride</h2>
+  {activeRide ? (
+    <>
+      <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
+      <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
+      {/* Display the timeline if a status is present */}
+      <RideStatusTimeline status={activeRide.status || 'requested'} />
+      <button onClick={handleCancelRide}>Cancel Ride</button>
+    </>
+  ) : (
+    <p>No active ride currently.</p>
+  )}
+</section>
 
         {/* Map Section */}
         <section className="map-section">
