@@ -1,6 +1,7 @@
-POST /rides/test-ride-in-progress HTTP/1.1
-Host: localhost:5000
+POST http://localhost:5000/rides/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQxMjg2MDU1LCJleHAiOjE3NDEyODk2NTV9.54Xnxs5uBxQvkiPuiy2ZkDMsLsWZ8_jG0raiekqvRAQ
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQxMjc0ODY2LCJleHAiOjE3NDEyNzg0NjZ9.6vY7Ix2OPXwjlVtGJEHuncVw6qAeXdrqJYsbauwP-JI
 
-{"rideId":155}
+{
+    "rideId": 164
+}

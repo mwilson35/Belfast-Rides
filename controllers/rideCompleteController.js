@@ -92,9 +92,9 @@ exports.completeRide = (req, res) => {
                 console.log(`Weekly earnings updated for Driver ID: ${userId}`);
 
                 // Emit rideCompleted event via Socket.IO
-                const io = req.app.get('io');
+                const io = req.app.get('io'); 
                 if (io) {
-                  io.emit('rideCompleted', { rideId, fare, message: 'Your ride is complete' });
+                  io.emit('rideCompleted', { rideId, driver_id: ride.driver_id, fare, message: 'Your ride is complete' });
                   console.log('Emitted rideCompleted event');
                 } else {
                   console.error('Socket.IO instance not found');

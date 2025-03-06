@@ -124,7 +124,8 @@ const RiderDashboard = () => {
     }
   };
 
-// Socket.IO integration for ride status and driver tracking
+
+/* eslint-disable react-hooks/exhaustive-deps */
 useEffect(() => {
   fetchRideHistory();
   fetchProfile();
@@ -157,14 +158,20 @@ useEffect(() => {
   });
   
   socket.on('rideCompleted', (data) => {
-    console.log('Ride completed event:', data);
+    console.log('Ride completed event fired with data:', data);
     setNotification('Your ride is complete!');
-    // You can also clear the active ride or prompt for rating
-    setActiveRide(null);
-    fetchRideHistory();
+    const rideDetails = activeRide 
+      ? { id: activeRide.rideId || activeRide.id, driver_id: activeRide.driver_id }
+      : { id: data.rideId, driver_id: data.driver_id };
+    console.log('Setting current ride for rating:', rideDetails);
+    setCurrentRideForRating(rideDetails);
+    setShowRatingModal(true);
+    setTimeout(() => {
+      setActiveRide(null);
+      fetchRideHistory();
+    }, 500);
   });
   
-  // Load persisted driver location if available
   const storedDriverLocation = localStorage.getItem('driverLocation');
   if (storedDriverLocation) {
     setDriverLocation(JSON.parse(storedDriverLocation));
@@ -179,6 +186,9 @@ useEffect(() => {
     socket.disconnect();
   };
 }, []);
+/* eslint-enable react-hooks/exhaustive-deps */
+
+
 
 useEffect(() => {
   let intervalId;
@@ -330,12 +340,16 @@ useEffect(() => {
       <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
       {eta && <p><strong>ETA:</strong> {eta}</p>}
       <RideStatusTimeline status={activeRide.status || 'requested'} />
-      <button onClick={handleCancelRide}>Cancel Ride</button>
+      {/* Only allow cancellation if ride is in early stages */}
+      {(activeRide.status === 'requested' || activeRide.status === 'accepted') && (
+        <button onClick={handleCancelRide}>Cancel Ride</button>
+      )}
     </>
   ) : (
     <p>No active ride currently.</p>
   )}
 </section>
+
 
 
         {/* Map Section */}
@@ -352,17 +366,7 @@ useEffect(() => {
               {rideHistory.map((ride) => (
                 <li key={ride.id}>
                   {ride.pickup_location} to {ride.destination} - Status: {ride.status}
-                  {ride.status === 'completed' && (
-                    <button 
-                      onClick={() => {
-                        setCurrentRideForRating(ride);
-                        setShowRatingModal(true);
-                      }}
-                      style={{ marginLeft: '1rem' }}
-                    >
-                      Rate Driver
-                    </button>
-                  )}
+
                 </li>
               ))}
             </ul>
