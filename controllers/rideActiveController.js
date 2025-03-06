@@ -4,9 +4,10 @@ const db = require('../db');
 exports.getActiveRide = (req, res) => {
   const userId = req.user.id; // The authentication middleware should set req.user
 
-  // Query for a ride where the current user (rider) has an active ride (status "requested" or "accepted")
+  // Query for a ride where the current user (rider) has an active ride.
+  // Here we consider "requested", "accepted", or "in progress" as active statuses.
   db.query(
-    'SELECT * FROM rides WHERE rider_id = ? AND status IN ("requested", "accepted") LIMIT 1',
+    'SELECT * FROM rides WHERE rider_id = ? AND status IN ("requested", "accepted", "in progress") LIMIT 1',
     [userId],
     (err, results) => {
       if (err) {

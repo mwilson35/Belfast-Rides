@@ -27,6 +27,7 @@ const RiderDashboard = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
+  const [eta, setEta] = useState(null);
 
   // Remove persisted preview/route on mount if no active ride exists
   useEffect(() => {
@@ -179,6 +180,29 @@ useEffect(() => {
   };
 }, []);
 
+useEffect(() => {
+  let intervalId;
+  if (activeRide && driverLocation && destination) {
+    intervalId = setInterval(async () => {
+      try {
+        const response = await api.get('/get-directions', {
+          params: {
+            origin: `${driverLocation.lat},${driverLocation.lng}`,
+            destination: destination
+          }
+        });
+        // Assuming the API returns ETA in response.data.routes[0].legs[0].duration.text
+        const duration = response.data.routes[0].legs[0].duration.text;
+        setEta(duration);
+      } catch (error) {
+        console.error('Error fetching ETA:', error);
+      }
+    }, 30000); // Poll every 30 seconds
+  }
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [activeRide, driverLocation, destination]);
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
@@ -304,7 +328,7 @@ useEffect(() => {
     <>
       <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
       <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
-      {/* Display the timeline if a status is present */}
+      {eta && <p><strong>ETA:</strong> {eta}</p>}
       <RideStatusTimeline status={activeRide.status || 'requested'} />
       <button onClick={handleCancelRide}>Cancel Ride</button>
     </>
@@ -312,6 +336,7 @@ useEffect(() => {
     <p>No active ride currently.</p>
   )}
 </section>
+
 
         {/* Map Section */}
         <section className="map-section">
