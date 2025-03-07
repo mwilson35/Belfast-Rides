@@ -28,6 +28,7 @@ const RiderDashboard = () => {
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
   const [eta, setEta] = useState(null);
+  const [expandedRide, setExpandedRide] = useState(null);
 
   // Remove persisted preview/route on mount if no active ride exists
   useEffect(() => {
@@ -358,22 +359,43 @@ useEffect(() => {
           <InteractiveMap markers={markers} route={route} />
         </section>
 
-        {/* Ride History Section */}
-        <section className="ride-history-section">
-          <h2>Your Ride History</h2>
-          {rideHistory && rideHistory.length ? (
-            <ul>
-              {rideHistory.map((ride) => (
-                <li key={ride.id}>
-                  {ride.pickup_location} to {ride.destination} - Status: {ride.status}
-
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No ride history available.</p>
+{/* Ride History Section */}
+<section className="ride-history-section">
+  <h2>Your Ride History</h2>
+  {rideHistory && rideHistory.length ? (
+    <ul>
+      {rideHistory.map((ride) => (
+        <li
+          key={ride.id}
+          style={{ borderBottom: '1px solid #ccc', padding: '0.5rem', cursor: 'pointer' }}
+          onClick={() => setExpandedRide(expandedRide === ride.id ? null : ride.id)}
+        >
+          <div>
+            {ride.pickup_location} to {ride.destination} - Status: {ride.status}
+          </div>
+          {expandedRide === ride.id && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
+              <p>
+                <strong>Date:</strong>{' '}
+                {ride.created_at ? new Date(ride.created_at).toLocaleString() : 'N/A'}
+              </p>
+              <p>
+                <strong>Distance:</strong> {ride.distance || 'N/A'}
+              </p>
+              <p>
+                <strong>Fare:</strong> {ride.fare ? `£${ride.fare}` : (ride.estimated_fare ? `£${ride.estimated_fare}` : 'N/A')}
+              </p>
+            </div>
           )}
-        </section>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>No ride history available.</p>
+  )}
+</section>
+
+
 
         {/* Notification Section */}
         {notification && (
