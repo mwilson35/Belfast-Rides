@@ -233,13 +233,15 @@ useEffect(() => {
       const response = await api.post('/rides/request', { pickupLocation, destination });
       setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId || response.data.id}`);
       setRidePreview(null);  // Clear preview since the ride is now requested
-      setActiveRide(response.data);
+      // Set a default status of "requested" if not provided
+      setActiveRide({ ...response.data, status: response.data.status || 'requested' });
       fetchRideHistory();
     } catch (error) {
       console.error('Error requesting ride:', error);
       setNotification('Failed to request ride.');
     }
   };
+  
 
   const handleCancelRide = async () => {
     const confirmCancel = window.confirm("Are you sure you want to cancel this ride? A cancellation fee may apply.");
@@ -332,8 +334,9 @@ useEffect(() => {
           )}
         </section>
 
-        {/* Active Ride Section (always rendered) */}
-        <section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
+
+{/* Active Ride Section */}
+<section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
   <h2>Active Ride</h2>
   {activeRide ? (
     <>
@@ -341,15 +344,18 @@ useEffect(() => {
       <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
       {eta && <p><strong>ETA:</strong> {eta}</p>}
       <RideStatusTimeline status={activeRide.status || 'requested'} />
-      {/* Only allow cancellation if ride is in early stages */}
-      {(activeRide.status === 'requested' || activeRide.status === 'accepted') && (
-        <button onClick={handleCancelRide}>Cancel Ride</button>
-      )}
+      <button 
+        onClick={handleCancelRide} 
+        disabled={!(activeRide.status === 'requested' || activeRide.status === 'accepted')}
+      >
+        Cancel Ride
+      </button>
     </>
   ) : (
     <p>No active ride currently.</p>
   )}
 </section>
+
 
 
 
