@@ -9,6 +9,8 @@ import RatingModal from '../components/RatingModal';
 import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
 import RideStatusTimeline from '../components/RideStatusTimeline';
+import RideSummary from '../components/RideSummary';
+
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
@@ -29,6 +31,9 @@ const RiderDashboard = () => {
   const [driverLocation, setDriverLocation] = useState(null);
   const [eta, setEta] = useState(null);
   const [expandedRide, setExpandedRide] = useState(null);
+  const [rideSummary, setRideSummary] = useState(null);
+const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
+
 
   // Remove persisted preview/route on mount if no active ride exists
   useEffect(() => {
@@ -161,17 +166,29 @@ useEffect(() => {
   socket.on('rideCompleted', (data) => {
     console.log('Ride completed event fired with data:', data);
     setNotification('Your ride is complete!');
+    // Use activeRide if available; otherwise, fallback to event payload.
     const rideDetails = activeRide 
-      ? { id: activeRide.rideId || activeRide.id, driver_id: activeRide.driver_id }
-      : { id: data.rideId, driver_id: data.driver_id };
-    console.log('Setting current ride for rating:', rideDetails);
-    setCurrentRideForRating(rideDetails);
-    setShowRatingModal(true);
+      ? { ...activeRide } 
+      : { 
+          id: data.rideId, 
+          driver_id: data.driver_id, 
+          pickup_location: data.pickup_location,
+          destination: data.destination,
+          created_at: data.created_at,
+          distance: data.distance,
+          fare: data.fare,
+          estimated_fare: data.estimated_fare
+        };
+    console.log('Setting ride summary for rating:', rideDetails);
+    setRideSummary(rideDetails);
+    setShowRideSummaryModal(true);
     setTimeout(() => {
       setActiveRide(null);
       fetchRideHistory();
     }, 500);
   });
+  
+  
   
   const storedDriverLocation = localStorage.getItem('driverLocation');
   if (storedDriverLocation) {
@@ -416,6 +433,17 @@ useEffect(() => {
           <ChatBox />
         </section>
       </div>
+      {showRideSummaryModal && rideSummary && (
+  <RideSummary 
+    ride={rideSummary}
+    onClose={() => setShowRideSummaryModal(false)}
+    onProceedToRating={() => {
+      setCurrentRideForRating(rideSummary); // Ensure currentRideForRating is set
+      setShowRideSummaryModal(false);
+      setShowRatingModal(true);
+    }}
+  />
+)}
 
       {/* Rating Modal */}
       {showRatingModal && currentRideForRating && (

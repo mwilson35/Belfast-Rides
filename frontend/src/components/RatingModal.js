@@ -4,14 +4,14 @@ import api from '../services/api';
 
 const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const [review, setReview] = useState(''); // Renamed from comment to review
   const [tip, setTip] = useState(''); // New tip state
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
     try {
-      // Send tip along with rating data; in production you'd integrate with a payment system.
-      await api.post('/ratings', { rideId, rateeId, rating, comment, tip: tip || 0 });
+      // Submit the rating along with the tip (defaulting to 0 if not provided)
+      await api.post('/ratings', { rideId, rateeId, rating, review, tip: tip || 0 });
       onRatingSubmitted();
       onClose();
     } catch (err) {
@@ -53,11 +53,11 @@ const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
           </select>
         </div>
         <div style={{ marginBottom: '1rem' }}>
-          <label htmlFor="comment">Comment:</label>
+          <label htmlFor="review">Review:</label>
           <textarea
-            id="comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            id="review"
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
             style={{ width: '100%', height: '80px', marginTop: '0.5rem' }}
           />
         </div>

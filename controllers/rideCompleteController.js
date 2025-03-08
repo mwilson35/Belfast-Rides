@@ -20,7 +20,6 @@ exports.completeRide = (req, res) => {
       console.error('Database error while fetching ride details:', err.message);
       return res.status(500).json({ message: 'Database error' });
     }
-
     if (results.length === 0) {
       return res.status(404).json({ message: 'Ride not found' });
     }
@@ -30,11 +29,9 @@ exports.completeRide = (req, res) => {
     if (ride.driver_id !== userId) {
       return res.status(403).json({ message: 'Forbidden: You cannot complete this ride' });
     }
-
     if (ride.status === 'completed') {
       return res.status(400).json({ message: 'Ride is already completed' });
     }
-
     if (!['accepted', 'in_progress'].includes(ride.status)) {
       return res.status(400).json({ message: 'Cannot complete a ride that is not in progress or accepted' });
     }
@@ -46,7 +43,7 @@ exports.completeRide = (req, res) => {
       surge_multiplier: ride.surge_multiplier || 1.0,
     };
 
-    const fare = calculateFare(ride.distance || 0, pricing); // Use 0 if distance is not available
+    const fare = calculateFare(ride.distance || 0, pricing); // Use calculated fare
 
     // Update the ride's status, fare, and payment status in the database
     db.query(
@@ -75,7 +72,6 @@ exports.completeRide = (req, res) => {
             // Calculate weekly earnings
             const currentDate = new Date();
             const { formattedWeekStart, formattedWeekEnd } = getWeekStartAndEnd(currentDate);
-
             console.log(`Updating weekly earnings for week start: ${formattedWeekStart} and end: ${formattedWeekEnd}`);
 
             db.query(
@@ -91,11 +87,21 @@ exports.completeRide = (req, res) => {
 
                 console.log(`Weekly earnings updated for Driver ID: ${userId}`);
 
-                // Emit rideCompleted event via Socket.IO
+                // Emit rideCompleted event via Socket.IO with full ride details
                 const io = req.app.get('io'); 
                 if (io) {
-                  io.emit('rideCompleted', { rideId, driver_id: ride.driver_id, fare, message: 'Your ride is complete' });
-                  console.log('Emitted rideCompleted event');
+                  io.emit('rideCompleted', {
+                    rideId,
+                    driver_id: ride.driver_id,
+                    fare, // calculated fare
+                    pickup_location: ride.pickup_location,
+                    destination: ride.destination,
+                    created_at: ride.created_at,
+                    distance: ride.distance,
+                    estimated_fare: ride.estimated_fare,
+                    message: 'Your ride is complete'
+                  });
+                  console.log('Emitted rideCompleted event with full details');
                 } else {
                   console.error('Socket.IO instance not found');
                 }
