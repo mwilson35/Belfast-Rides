@@ -2,7 +2,7 @@
 const db = require('../db');
 
 exports.submitRating = (req, res) => {
-  const { rideId, rateeId, rating, review } = req.body;
+  const { rideId, rateeId, rating, review, tip } = req.body;
   const raterId = req.user.id;
 
   if (!rideId || !rateeId || !rating) {
@@ -43,7 +43,18 @@ exports.submitRating = (req, res) => {
             console.error("Error inserting rating:", err);
             return res.status(500).json({ message: "Error saving rating." });
           }
-          return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
+          // Now update the rides table to store the tip amount.
+          db.query(
+            "UPDATE rides SET tip = ? WHERE id = ?",
+            [tip || 0, rideId],
+            (err, updateResult) => {
+              if (err) {
+                console.error("Error updating tip:", err);
+                return res.status(500).json({ message: "Error updating tip." });
+              }
+              return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
+            }
+          );
         }
       );
     });

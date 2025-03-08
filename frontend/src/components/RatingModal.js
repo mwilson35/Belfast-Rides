@@ -5,11 +5,13 @@ import api from '../services/api';
 const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [tip, setTip] = useState(''); // New tip state
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
     try {
-      await api.post('/ratings', { rideId, rateeId, rating, comment });
+      // Send tip along with rating data; in production you'd integrate with a payment system.
+      await api.post('/ratings', { rideId, rateeId, rating, comment, tip: tip || 0 });
       onRatingSubmitted();
       onClose();
     } catch (err) {
@@ -57,6 +59,17 @@ const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             style={{ width: '100%', height: '80px', marginTop: '0.5rem' }}
+          />
+        </div>
+        <div style={{ marginBottom: '1rem' }}>
+          <label htmlFor="tip">Tip (optional):</label>
+          <input
+            id="tip"
+            type="number"
+            placeholder="Enter tip amount"
+            value={tip}
+            onChange={(e) => setTip(e.target.value)}
+            style={{ marginLeft: '0.5rem' }}
           />
         </div>
         {error && <p style={{ color: 'red' }}>{error}</p>}
