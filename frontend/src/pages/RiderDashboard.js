@@ -348,40 +348,41 @@ const RiderDashboard = () => {
           <DocumentUpload documentType="profilePhoto" />
         </section>
     
-        {/* Ride Request Section */}
-        <section className="ride-request-section">
-          <h2>Request a Ride</h2>
-          <form onSubmit={handlePreviewRide}>
-            <div>
-              <label>Pickup Location:</label>
-              <input
-                type="text"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label>Destination:</label>
-              <input
-                type="text"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit">Preview Ride</button>
-          </form>
-          {ridePreview && (
-            <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-              <p><strong>Ride Preview:</strong></p>
-              <p>Distance: {ridePreview.distance}</p>
-              <p>Duration: {ridePreview.duration}</p>
-              <p>Estimated Fare: {ridePreview.estimatedFare}</p>
-              <button onClick={handleRequestRide}>Request Ride</button>
-            </div>
-          )}
-        </section>
+{/* Ride Request Section */}
+<section className="ride-request-section">
+  <h2>Request a Ride</h2>
+  <form onSubmit={handlePreviewRide}>
+    <div>
+      <label>Pickup Location:</label>
+      <input
+        type="text"
+        value={pickupLocation}
+        onChange={(e) => setPickupLocation(e.target.value)}
+        required
+      />
+    </div>
+    <div>
+      <label>Destination:</label>
+      <input
+        type="text"
+        value={destination}
+        onChange={(e) => setDestination(e.target.value)}
+        required
+      />
+    </div>
+    <button type="submit">Preview Ride</button>
+  </form>
+  {ridePreview && (
+    <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
+      <p><strong>Ride Preview:</strong></p>
+      <p>Distance: {ridePreview.distance}</p>
+      <p>Duration: {ridePreview.duration}</p>
+      <p>Estimated Fare: {ridePreview.estimatedFare}</p>
+      <button onClick={handleRequestRide}>Request Ride</button>
+    </div>
+  )}
+</section>
+
 
 
 {/* Active Ride Section */}
@@ -432,6 +433,19 @@ const RiderDashboard = () => {
           <div>
             {ride.pickup_location} to {ride.destination} - Status: {ride.status}
           </div>
+          <div style={{ marginTop: '0.5rem' }}>
+            <button
+              onClick={() => {
+                // Populate the ride request form with this ride's details for rebooking
+                setPickupLocation(ride.pickup_location);
+                setDestination(ride.destination);
+                // Optionally, scroll to the request form
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Rebook Ride
+            </button>
+          </div>
           {expandedRide === ride.id && (
             <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
               <p>
@@ -453,6 +467,7 @@ const RiderDashboard = () => {
     <p>No ride history available.</p>
   )}
 </section>
+
 
 {/* Notification Section */}
 {notification && (
