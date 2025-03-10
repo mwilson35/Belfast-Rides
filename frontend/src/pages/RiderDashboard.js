@@ -11,11 +11,29 @@ import polyline from 'polyline';
 import RideStatusTimeline from '../components/RideStatusTimeline';
 import RideSummary from '../components/RideSummary';
 
-
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
   return points.map(point => ({ lat: point[0], lng: point[1] }));
 };
+
+// You can place this in the same file or in a separate file and import it.
+const DriverDetails = ({ driverDetails, driverRating }) => (
+  <div style={{ marginTop: '1rem', padding: '0.5rem', border: '1px solid #aaa' }}>
+    <h3>Driver Details</h3>
+    <p><strong>Name:</strong> {driverDetails.username}</p>
+    <p>
+      <strong>Vehicle:</strong> {driverDetails.vehicle_description} 
+      {driverDetails.vehicle_reg && ` reg ${driverDetails.vehicle_reg}`}
+    </p>
+    {driverRating && (
+      <p>
+        <strong>Rating:</strong> {driverRating.avgRating ? Number(driverRating.avgRating).toFixed(1) : 'N/A'} 
+        (from {driverRating.totalRatings} reviews)
+      </p>
+    )}
+  </div>
+);
+
 
 const RiderDashboard = () => {
   const [profile, setProfile] = useState(null);
@@ -32,8 +50,7 @@ const RiderDashboard = () => {
   const [eta, setEta] = useState(null);
   const [expandedRide, setExpandedRide] = useState(null);
   const [rideSummary, setRideSummary] = useState(null);
-const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
-
+  const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
 
   // Remove persisted preview/route on mount if no active ride exists
   useEffect(() => {
@@ -64,7 +81,7 @@ const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
       });
   };
 
-  // Fetch active ride from backend and clear preview/route if none exists
+  // Fetch active ride (and if status is accepted, enrich it with driver details)
   const fetchActiveRide = () => {
     api.get('/rides/active')
       .then(response => {
@@ -74,13 +91,25 @@ const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
           localStorage.removeItem('route');
           setRidePreview(null);
           setRoute(null);
+          setActiveRide(null);
+          return;
         }
-        setActiveRide(response.data);
-        // Optionally, persist active ride to localStorage if you want it to survive refresh
-        if (response.data) {
-          localStorage.setItem('activeRide', JSON.stringify(response.data));
+        const ride = response.data;
+        if (ride.status === 'accepted') {
+          // Enrich ride with driver details
+          api.get('/rides/accepted-ride-details', { params: { rideId: ride.id } })
+            .then(res => {
+              setActiveRide(res.data);
+              localStorage.setItem('activeRide', JSON.stringify(res.data));
+            })
+            .catch(err => {
+              console.error('Error fetching accepted ride details:', err);
+              setActiveRide(ride);
+              localStorage.setItem('activeRide', JSON.stringify(ride));
+            });
         } else {
-          localStorage.removeItem('activeRide');
+          setActiveRide(ride);
+          localStorage.setItem('activeRide', JSON.stringify(ride));
         }
       })
       .catch(error => {
@@ -88,7 +117,7 @@ const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
       });
   };
 
-  // Persist ridePreview and route only if needed (optional)
+  // Persist ridePreview and route
   useEffect(() => {
     if (ridePreview) {
       localStorage.setItem('ridePreview', JSON.stringify(ridePreview));
@@ -105,7 +134,7 @@ const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
     }
   }, [route]);
 
-  // Load persisted preview and route if present (optional)
+  // Load persisted preview and route
   useEffect(() => {
     const storedPreview = localStorage.getItem('ridePreview');
     const storedRoute = localStorage.getItem('route');
@@ -130,107 +159,112 @@ const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
     }
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    fetchRideHistory();
+    fetchProfile();
+    fetchActiveRide();
 
-/* eslint-disable react-hooks/exhaustive-deps */
-useEffect(() => {
-  fetchRideHistory();
-  fetchProfile();
-  fetchActiveRide();
-
-  const socket = require('socket.io-client')('http://localhost:5000');
-  
-  socket.on('locationUpdate', (data) => {
-    console.log('Received locationUpdate event:', data);
-    setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
-    localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
-  });
-  
-  socket.on('driverAccepted', (data) => {
-    console.log('Driver accepted ride:', data);
-    setNotification('Your ride has been accepted!');
-    setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
-  });
-  
-  socket.on('driverArrived', (data) => {
-    console.log('Driver has arrived:', data);
-    setNotification('Your driver has arrived!');
-    setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
-  });
-  
-  socket.on('rideInProgress', (data) => {
-    console.log('Ride in progress event:', data);
-    setNotification('Your ride is now in progress!');
-    setActiveRide(prev => prev ? { ...prev, status: 'in progress' } : prev);
-  });
-  
-  socket.on('rideCompleted', (data) => {
-    console.log('Ride completed event fired with data:', data);
-    setNotification('Your ride is complete!');
-    // Use activeRide if available; otherwise, fallback to event payload.
-    const rideDetails = activeRide 
-      ? { ...activeRide } 
-      : { 
-          id: data.rideId, 
-          driver_id: data.driver_id, 
-          pickup_location: data.pickup_location,
-          destination: data.destination,
-          created_at: data.created_at,
-          distance: data.distance,
-          fare: data.fare,
-          estimated_fare: data.estimated_fare
-        };
-    console.log('Setting ride summary for rating:', rideDetails);
-    setRideSummary(rideDetails);
-    setShowRideSummaryModal(true);
-    setTimeout(() => {
-      setActiveRide(null);
-      fetchRideHistory();
-    }, 500);
-  });
-  
-  
-  
-  const storedDriverLocation = localStorage.getItem('driverLocation');
-  if (storedDriverLocation) {
-    setDriverLocation(JSON.parse(storedDriverLocation));
-  }
-  
-  return () => {
-    socket.off('locationUpdate');
-    socket.off('driverAccepted');
-    socket.off('driverArrived');
-    socket.off('rideInProgress');
-    socket.off('rideCompleted');
-    socket.disconnect();
-  };
-}, []);
-/* eslint-enable react-hooks/exhaustive-deps */
-
-
-
-useEffect(() => {
-  let intervalId;
-  if (activeRide && driverLocation && destination) {
-    intervalId = setInterval(async () => {
+    const socket = require('socket.io-client')('http://localhost:5000');
+    
+    socket.on('locationUpdate', (data) => {
+      console.log('Received locationUpdate event:', data);
+      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
+      localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
+    });
+    
+    socket.on('driverAccepted', async (data) => {
+      console.log('Driver accepted ride event data:', data);
+      setNotification('Your ride has been accepted!');
       try {
-        const response = await api.get('/get-directions', {
-          params: {
-            origin: `${driverLocation.lat},${driverLocation.lng}`,
-            destination: destination
-          }
-        });
-        // Assuming the API returns ETA in response.data.routes[0].legs[0].duration.text
-        const duration = response.data.routes[0].legs[0].duration.text;
-        setEta(duration);
+        const rideId = data.rideId || (activeRide && (activeRide.rideId || activeRide.id));
+        if (!rideId) {
+          console.error('No rideId available in driverAccepted event or activeRide');
+          return;
+        }
+        const response = await api.get('/rides/accepted-ride-details', { params: { rideId } });
+        console.log('Accepted ride details:', response.data);
+        setActiveRide(response.data);
       } catch (error) {
-        console.error('Error fetching ETA:', error);
+        console.error('Error fetching accepted ride details:', error);
+        setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
       }
-    }, 30000); // Poll every 30 seconds
-  }
-  return () => {
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [activeRide, driverLocation, destination]);
+    });
+    
+    socket.on('driverArrived', (data) => {
+      console.log('Driver has arrived:', data);
+      setNotification('Your driver has arrived!');
+      setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
+    });
+    
+    socket.on('rideInProgress', (data) => {
+      console.log('Ride in progress event:', data);
+      setNotification('Your ride is now in progress!');
+      setActiveRide(prev => prev ? { ...prev, status: 'in progress' } : prev);
+    });
+    
+    socket.on('rideCompleted', (data) => {
+      console.log('Ride completed event fired with data:', data);
+      setNotification('Your ride is complete!');
+      const rideDetails = activeRide 
+        ? { ...activeRide } 
+        : { 
+            id: data.rideId, 
+            driver_id: data.driver_id, 
+            pickup_location: data.pickup_location,
+            destination: data.destination,
+            created_at: data.created_at,
+            distance: data.distance,
+            fare: data.fare,
+            estimated_fare: data.estimated_fare
+          };
+      console.log('Setting ride summary for rating:', rideDetails);
+      setRideSummary(rideDetails);
+      setShowRideSummaryModal(true);
+      setTimeout(() => {
+        setActiveRide(null);
+        fetchRideHistory();
+      }, 500);
+    });
+    
+    const storedDriverLocation = localStorage.getItem('driverLocation');
+    if (storedDriverLocation) {
+      setDriverLocation(JSON.parse(storedDriverLocation));
+    }
+    
+    return () => {
+      socket.off('locationUpdate');
+      socket.off('driverAccepted');
+      socket.off('driverArrived');
+      socket.off('rideInProgress');
+      socket.off('rideCompleted');
+      socket.disconnect();
+    };
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  useEffect(() => {
+    let intervalId;
+    if (activeRide && driverLocation && destination) {
+      intervalId = setInterval(async () => {
+        try {
+          const response = await api.get('/get-directions', {
+            params: {
+              origin: `${driverLocation.lat},${driverLocation.lng}`,
+              destination: destination
+            }
+          });
+          const duration = response.data.routes[0].legs[0].duration.text;
+          setEta(duration);
+        } catch (error) {
+          console.error('Error fetching ETA:', error);
+        }
+      }, 30000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [activeRide, driverLocation, destination]);
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
@@ -249,8 +283,7 @@ useEffect(() => {
     try {
       const response = await api.post('/rides/request', { pickupLocation, destination });
       setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId || response.data.id}`);
-      setRidePreview(null);  // Clear preview since the ride is now requested
-      // Set a default status of "requested" if not provided
+      setRidePreview(null);
       setActiveRide({ ...response.data, status: response.data.status || 'requested' });
       fetchRideHistory();
     } catch (error) {
@@ -258,7 +291,6 @@ useEffect(() => {
       setNotification('Failed to request ride.');
     }
   };
-  
 
   const handleCancelRide = async () => {
     const confirmCancel = window.confirm("Are you sure you want to cancel this ride? A cancellation fee may apply.");
@@ -367,6 +399,12 @@ useEffect(() => {
       >
         Cancel Ride
       </button>
+      {(activeRide.status === 'accepted' || activeRide.status === 'in_progress') && activeRide.driverDetails && (
+        <DriverDetails 
+          driverDetails={activeRide.driverDetails} 
+          driverRating={activeRide.driverRating} 
+        />
+      )}
     </>
   ) : (
     <p>No active ride currently.</p>
@@ -374,13 +412,11 @@ useEffect(() => {
 </section>
 
 
-
-
-        {/* Map Section */}
-        <section className="map-section">
-          <h2>Live Map</h2>
-          <InteractiveMap markers={markers} route={route} />
-        </section>
+{/* Map Section */}
+<section className="map-section">
+  <h2>Live Map</h2>
+  <InteractiveMap markers={markers} route={route} />
+</section>
 
 {/* Ride History Section */}
 <section className="ride-history-section">
@@ -418,34 +454,30 @@ useEffect(() => {
   )}
 </section>
 
+{/* Notification Section */}
+{notification && (
+  <section className="notification-section" style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fdd' }}>
+    <p>{notification}</p>
+  </section>
+)}
 
-
-        {/* Notification Section */}
-        {notification && (
-          <section className="notification-section" style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fdd' }}>
-            <p>{notification}</p>
-          </section>
-        )}
-
-        {/* Chat Section */}
-        <section className="chat-section" style={{ marginTop: '1rem' }}>
-          <h2>Chat</h2>
-          <ChatBox />
-        </section>
+{/* Chat Section */}
+<section className="chat-section" style={{ marginTop: '1rem' }}>
+  <h2>Chat</h2>
+  <ChatBox />
+</section>
       </div>
       {showRideSummaryModal && rideSummary && (
   <RideSummary 
     ride={rideSummary}
     onClose={() => setShowRideSummaryModal(false)}
     onProceedToRating={() => {
-      setCurrentRideForRating(rideSummary); // Ensure currentRideForRating is set
+      setCurrentRideForRating(rideSummary);
       setShowRideSummaryModal(false);
       setShowRatingModal(true);
     }}
   />
 )}
-
-      {/* Rating Modal */}
       {showRatingModal && currentRideForRating && (
         <RatingModal 
           rideId={currentRideForRating.id}
