@@ -10,29 +10,15 @@ import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
 import RideStatusTimeline from '../components/RideStatusTimeline';
 import RideSummary from '../components/RideSummary';
+import DriverDetails from '../components/DriverDetails';
+
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
   return points.map(point => ({ lat: point[0], lng: point[1] }));
 };
 
-// You can place this in the same file or in a separate file and import it.
-const DriverDetails = ({ driverDetails, driverRating }) => (
-  <div style={{ marginTop: '1rem', padding: '0.5rem', border: '1px solid #aaa' }}>
-    <h3>Driver Details</h3>
-    <p><strong>Name:</strong> {driverDetails.username}</p>
-    <p>
-      <strong>Vehicle:</strong> {driverDetails.vehicle_description} 
-      {driverDetails.vehicle_reg && ` reg ${driverDetails.vehicle_reg}`}
-    </p>
-    {driverRating && (
-      <p>
-        <strong>Rating:</strong> {driverRating.avgRating ? Number(driverRating.avgRating).toFixed(1) : 'N/A'} 
-        (from {driverRating.totalRatings} reviews)
-      </p>
-    )}
-  </div>
-);
+
 
 
 const RiderDashboard = () => {
