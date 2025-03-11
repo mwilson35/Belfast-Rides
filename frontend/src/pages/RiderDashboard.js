@@ -8,11 +8,12 @@ import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
 import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
-import RideStatusTimeline from '../components/RideStatusTimeline';
+
 import RideSummary from '../components/RideSummary';
-import DriverDetails from '../components/DriverDetails';
+
 import ProfileSection from '../components/ProfileSection';
 import RideRequest from '../components/RideRequest';
+import ActiveRideSection from '../components/ActiveRideSection';
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
@@ -334,31 +335,11 @@ const RiderDashboard = () => {
 />
 
 {/* Active Ride Section */}
-<section className="active-ride-section" style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-  <h2>Active Ride</h2>
-  {activeRide ? (
-    <>
-      <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
-      <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
-      {eta && <p><strong>ETA:</strong> {eta}</p>}
-      <RideStatusTimeline status={activeRide.status || 'requested'} />
-      <button 
-        onClick={handleCancelRide} 
-        disabled={!(activeRide.status === 'requested' || activeRide.status === 'accepted')}
-      >
-        Cancel Ride
-      </button>
-      {(activeRide.status === 'accepted' || activeRide.status === 'in_progress') && activeRide.driverDetails && (
-        <DriverDetails 
-          driverDetails={activeRide.driverDetails} 
-          driverRating={activeRide.driverRating} 
-        />
-      )}
-    </>
-  ) : (
-    <p>No active ride currently.</p>
-  )}
-</section>
+<ActiveRideSection 
+  activeRide={activeRide} 
+  eta={eta} 
+  handleCancelRide={handleCancelRide} 
+/>
 
 
 {/* Map Section */}
