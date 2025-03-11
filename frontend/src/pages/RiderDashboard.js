@@ -2,18 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import InteractiveMap from '../components/InteractiveMap';
 import DocumentUpload from '../components/DocumentUpload';
 import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
 import ChatBox from '../components/ChatBox';
 import polyline from 'polyline';
-
 import RideSummary from '../components/RideSummary';
-
 import ProfileSection from '../components/ProfileSection';
 import RideRequest from '../components/RideRequest';
 import ActiveRideSection from '../components/ActiveRideSection';
+import MapSection from '../components/MapSection';
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
@@ -342,11 +340,7 @@ const RiderDashboard = () => {
 />
 
 
-{/* Map Section */}
-<section className="map-section">
-  <h2>Live Map</h2>
-  <InteractiveMap markers={markers} route={route} />
-</section>
+<MapSection markers={markers} route={route} />
 
 {/* Ride History Section */}
 <section className="ride-history-section">
