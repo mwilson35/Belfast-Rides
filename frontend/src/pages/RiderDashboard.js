@@ -11,7 +11,7 @@ import polyline from 'polyline';
 import RideStatusTimeline from '../components/RideStatusTimeline';
 import RideSummary from '../components/RideSummary';
 import DriverDetails from '../components/DriverDetails';
-
+import ProfileSection from '../components/ProfileSection';
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
@@ -315,32 +315,19 @@ const RiderDashboard = () => {
       <div style={{ padding: '1rem' }}>
         <h1>Rider Dashboard</h1>
         
-        {/* Profile Section */}
-        <section className="profile-section">
-          <h2>Your Profile</h2>
-          {profile ? (
-            <div>
-              <p><strong>Name:</strong> {profile.username}</p>
-              <p><strong>Email:</strong> {profile.email}</p>
-            </div>
-          ) : (
-            <p>Loading profile...</p>
-          )}
-        </section>
-        
         {/* Documents Section */}
         <section className="documents-section">
           <h2>Your Documents</h2>
           <DocumentUpload documentType="profilePhoto" />
         </section>
-    
+        <ProfileSection profile={profile} />
 {/* Ride Request Section */}
 <section className="ride-request-section">
   <h2>Request a Ride</h2>
   <form onSubmit={handlePreviewRide}>
     <div>
       <label>Pickup Location:</label>
-      <input
+      <input  
         type="text"
         value={pickupLocation}
         onChange={(e) => setPickupLocation(e.target.value)}
