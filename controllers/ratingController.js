@@ -1,5 +1,6 @@
 // controllers/ratingController.js
 const db = require('../db');
+const { getWeekStartAndEnd } = require('../utils/dateUtils');
 
 exports.submitRating = (req, res) => {
   const { rideId, rateeId, rating, review, tip } = req.body;
@@ -43,18 +44,62 @@ exports.submitRating = (req, res) => {
             console.error("Error inserting rating:", err);
             return res.status(500).json({ message: "Error saving rating." });
           }
-          // Now update the rides table to store the tip amount.
-          db.query(
-            "UPDATE rides SET tip = ? WHERE id = ?",
-            [tip || 0, rideId],
-            (err, updateResult) => {
+          
+          // Parse the new tip from the request.
+          const newTip = tip ? parseFloat(tip) : 0;
+          // Now, fetch the current tip stored in the ride.
+          db.query("SELECT tip FROM rides WHERE id = ?", [rideId], (err, tipResults) => {
+            if (err) {
+              console.error("Error fetching current tip:", err);
+              return res.status(500).json({ message: "Error fetching current tip." });
+            }
+            const currentTip = tipResults[0].tip ? parseFloat(tipResults[0].tip) : 0;
+            const tipDifference = newTip - currentTip;
+            // Update the ride with the new tip (if different)
+            db.query("UPDATE rides SET tip = ? WHERE id = ?", [newTip, rideId], (err, updateResult) => {
               if (err) {
-                console.error("Error updating tip:", err);
+                console.error("Error updating ride tip:", err);
                 return res.status(500).json({ message: "Error updating tip." });
               }
-              return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
-            }
-          );
+              console.log(`Ride ${rideId} tip updated from ${currentTip} to ${newTip}. Difference: ${tipDifference}`);
+              // Only update earnings if there is a difference.
+              if (tipDifference !== 0) {
+                // Update driver earnings for this ride by adding the difference.
+                db.query(
+                  "UPDATE driver_earnings SET amount = amount + ? WHERE ride_id = ?",
+                  [tipDifference, rideId],
+                  (err, earningsUpdateResult) => {
+                    if (err) {
+                      console.error("Error updating driver earnings for tip:", err);
+                      return res.status(500).json({ message: "Error updating driver earnings for tip." });
+                    }
+                    console.log(`Driver earnings updated for ride ${rideId}: tip difference added = ${tipDifference}`);
+
+                    // Update weekly earnings.
+                    const currentDate = new Date();
+                    const { formattedWeekStart, formattedWeekEnd } = getWeekStartAndEnd(currentDate);
+                    // Use INSERT ... ON DUPLICATE KEY UPDATE to update weekly earnings.
+                    db.query(
+                      `INSERT INTO weekly_earnings (driver_id, week_start, week_end, total_earnings)
+                       VALUES (?, ?, ?, ?)
+                       ON DUPLICATE KEY UPDATE total_earnings = total_earnings + ?`,
+                      [ride.driver_id, formattedWeekStart, formattedWeekEnd, tipDifference, tipDifference],
+                      (err, weeklyUpdateResult) => {
+                        if (err) {
+                          console.error("Error updating weekly earnings for tip:", err);
+                          return res.status(500).json({ message: "Error updating weekly earnings for tip." });
+                        }
+                        console.log(`Weekly earnings updated for driver ${ride.driver_id} with tip difference ${tipDifference}`);
+                        return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
+                      }
+                    );
+                  }
+                );
+              } else {
+                return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
+              }
+            });
+          });
         }
       );
     });
@@ -62,7 +107,6 @@ exports.submitRating = (req, res) => {
 };
 
 exports.getRating = (req, res) => {
-  // Only non-riders can access driver ratings.
   if (req.user.role === 'rider') {
     return res.status(403).json({ message: 'Riders cannot directly access driver ratings.' });
   }
