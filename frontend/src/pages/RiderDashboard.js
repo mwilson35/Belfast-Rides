@@ -1,4 +1,3 @@
-// src/pages/RiderDashboard.js
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
@@ -23,10 +22,11 @@ import {
 
 const decodePolyline = (encoded) => {
   const points = polyline.decode(encoded);
-  return points.map(point => ({ lat: point[0], lng: point[1] }));
+  return points.map((point) => ({ lat: point[0], lng: point[1] }));
 };
 
 const RiderDashboard = () => {
+  // Dashboard states (the ones from your original code)
   const [profile, setProfile] = useState(null);
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
@@ -43,7 +43,10 @@ const RiderDashboard = () => {
   const [rideSummary, setRideSummary] = useState(null);
   const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
 
-  // Remove persisted preview/route on mount if no active ride exists
+  // New state to control which tab is active
+  const [activeTab, setActiveTab] = useState('rideRequest');
+
+  // Existing useEffects to load data and handle socket events...
   useEffect(() => {
     const storedActiveRide = localStorage.getItem('activeRide');
     if (!storedActiveRide) {
@@ -52,7 +55,6 @@ const RiderDashboard = () => {
     }
   }, []);
 
-  // Load persisted preview and route
   useEffect(() => {
     const storedPreview = localStorage.getItem('ridePreview');
     const storedRoute = localStorage.getItem('route');
@@ -60,7 +62,6 @@ const RiderDashboard = () => {
     if (storedRoute) setRoute(JSON.parse(storedRoute));
   }, []);
 
-  // Load initial data using service functions
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -106,51 +107,40 @@ const RiderDashboard = () => {
     loadData();
   }, []);
 
-  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const socket = require('socket.io-client')('http://localhost:5000');
 
     socket.on('locationUpdate', (data) => {
-      console.log('Received locationUpdate event:', data);
       setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
       localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
     });
 
     socket.on('driverAccepted', async (data) => {
-      console.log('Driver accepted ride event data:', data);
       setNotification('Your ride has been accepted!');
       try {
         const rideId = data.rideId || (activeRide && (activeRide.rideId || activeRide.id));
-        if (!rideId) {
-          console.error('No rideId available in driverAccepted event or activeRide');
-          return;
-        }
+        if (!rideId) return;
         const response = await api.get('/rides/accepted-ride-details', { params: { rideId } });
-        console.log('Accepted ride details:', response.data);
         setActiveRide(response.data);
       } catch (error) {
-        console.error('Error fetching accepted ride details:', error);
-        setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
+        setActiveRide((prev) => (prev ? { ...prev, status: 'accepted' } : prev));
       }
     });
 
-    socket.on('driverArrived', (data) => {
-      console.log('Driver has arrived:', data);
+    socket.on('driverArrived', () => {
       setNotification('Your driver has arrived!');
-      setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
+      setActiveRide((prev) => (prev ? { ...prev, status: 'arrived' } : prev));
     });
 
-    socket.on('rideInProgress', (data) => {
-      console.log('Ride in progress event:', data);
+    socket.on('rideInProgress', () => {
       setNotification('Your ride is now in progress!');
-      setActiveRide(prev => prev ? { ...prev, status: 'in progress' } : prev);
+      setActiveRide((prev) => (prev ? { ...prev, status: 'in progress' } : prev));
     });
 
     socket.on('rideCompleted', (data) => {
-      console.log('Ride completed event fired with data:', data);
       setNotification('Your ride is complete!');
-      const rideDetails = activeRide 
-        ? { ...activeRide } 
+      const rideDetails = activeRide
+        ? { ...activeRide }
         : { 
             id: data.rideId, 
             driver_id: data.driver_id, 
@@ -161,14 +151,11 @@ const RiderDashboard = () => {
             fare: data.fare,
             estimated_fare: data.estimated_fare,
           };
-      console.log('Setting ride summary for rating:', rideDetails);
       setRideSummary(rideDetails);
       setShowRideSummaryModal(true);
       setTimeout(() => {
         setActiveRide(null);
-        fetchRideHistory()
-          .then(setRideHistory)
-          .catch(() => setNotification('Failed to load ride history.'));
+        fetchRideHistory().then(setRideHistory).catch(() => setNotification('Failed to load ride history.'));
       }, 500);
     });
 
@@ -186,7 +173,6 @@ const RiderDashboard = () => {
       socket.disconnect();
     };
   }, []);
-  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     let intervalId;
@@ -262,6 +248,7 @@ const RiderDashboard = () => {
     }
   };
 
+  // Prepare markers for MapSection if applicable
   const markers = [];
   if (ridePreview && ridePreview.pickupLat && ridePreview.pickupLng) {
     markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
@@ -276,43 +263,80 @@ const RiderDashboard = () => {
       <Notifications />
       <div style={{ padding: '1rem' }}>
         <h1>Rider Dashboard</h1>
-        <section className="documents-section">
-          <h2>Your Documents</h2>
-          <DocumentUpload documentType="profilePhoto" />
-        </section>
-        <ProfileSection profile={profile} />
-        <RideRequest
-          pickupLocation={pickupLocation}
-          setPickupLocation={setPickupLocation}
-          destination={destination}
-          setDestination={setDestination}
-          ridePreview={ridePreview}
-          handlePreviewRide={handlePreviewRide}
-          handleRequestRide={handleRequestRide}
-        />
-        <ActiveRideSection 
-          activeRide={activeRide} 
-          eta={eta} 
-          handleCancelRide={handleCancelRide} 
-        />
-        <MapSection markers={markers} route={route} />
-        <RideHistory
-          rideHistory={rideHistory}
-          expandedRide={expandedRide}
-          setExpandedRide={setExpandedRide}
-          setPickupLocation={setPickupLocation}
-          setDestination={setDestination}
-        />
+        {/* Dashboard Tab Navigation */}
+        <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <button onClick={() => setActiveTab('rideRequest')}>Request Ride</button>
+          <button onClick={() => setActiveTab('activeRide')}>Active Ride</button>
+          <button onClick={() => setActiveTab('rideHistory')}>Ride History</button>
+          <button onClick={() => setActiveTab('profile')}>Profile</button>
+          <button onClick={() => setActiveTab('documents')}>Documents</button>
+          <button onClick={() => setActiveTab('chat')}>Chat</button>
+        </div>
+
+        {/* Render content based on active tab */}
+        {activeTab === 'rideRequest' && (
+          <>
+            <RideRequest
+              pickupLocation={pickupLocation}
+              setPickupLocation={setPickupLocation}
+              destination={destination}
+              setDestination={setDestination}
+              ridePreview={ridePreview}
+              handlePreviewRide={handlePreviewRide}
+              handleRequestRide={handleRequestRide}
+            />
+            <MapSection markers={markers} route={route} />
+          </>
+        )}
+
+        {activeTab === 'activeRide' && (
+          <>
+            <ActiveRideSection 
+              activeRide={activeRide} 
+              eta={eta} 
+              handleCancelRide={handleCancelRide} 
+            />
+            <MapSection markers={markers} route={route} />
+          </>
+        )}
+
+        {activeTab === 'rideHistory' && (
+          <RideHistory
+            rideHistory={rideHistory}
+            expandedRide={expandedRide}
+            setExpandedRide={setExpandedRide}
+            setPickupLocation={setPickupLocation}
+            setDestination={setDestination}
+          />
+        )}
+
+        {activeTab === 'profile' && (
+          <ProfileSection profile={profile} />
+        )}
+
+        {activeTab === 'documents' && (
+          <section className="documents-section">
+            <h2>Your Documents</h2>
+            <DocumentUpload documentType="profilePhoto" />
+          </section>
+        )}
+
+        {activeTab === 'chat' && (
+          <section className="chat-section" style={{ marginTop: '1rem' }}>
+            <h2>Chat</h2>
+            <ChatBox />
+          </section>
+        )}
+
+        {/* Display notification if exists */}
         {notification && (
-          <section className="notification-section" style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fdd' }}>
+          <section style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fdd' }}>
             <p>{notification}</p>
           </section>
         )}
-        <section className="chat-section" style={{ marginTop: '1rem' }}>
-          <h2>Chat</h2>
-          <ChatBox />
-        </section>
       </div>
+
+      {/* Ride Summary and Rating Modals */}
       {showRideSummaryModal && rideSummary && (
         <RideSummary 
           ride={rideSummary}
