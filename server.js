@@ -99,16 +99,35 @@ app.get('/get-directions', async (req, res) => {
 });
 
 app.get('/static-map', (req, res) => {
-  const { center, zoom = 12 } = req.query;
+  const { center, zoom = 10, path, pickup, destination } = req.query;
   const size = '600x400';
+  
   if (!center) {
     return res.status(400).json({ error: "Missing 'center' parameter" });
   }
+  
   const encodedCenter = encodeURIComponent(center);
-  const url = `https://maps.googleapis.com/maps/api/staticmap?center=${encodedCenter}&zoom=${zoom}&size=${size}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+  let url = `https://maps.googleapis.com/maps/api/staticmap?center=${encodedCenter}&zoom=${zoom}&size=${size}`;
+  
+  // If a polyline is provided, add it with styling (weight and color)
+  if (path) {
+    url += `&path=weight:3|color:blue|enc:${encodeURIComponent(path)}`;
+  }
+  
+  // Optionally add markers for pickup and destination if available
+  if (pickup) {
+    url += `&markers=color:green|label:P|${encodeURIComponent(pickup)}`;
+  }
+  if (destination) {
+    url += `&markers=color:red|label:D|${encodeURIComponent(destination)}`;
+  }
+  
+  url += `&key=${process.env.GOOGLE_MAPS_API_KEY}`;
   console.log('Generated Static Map URL:', url);
   res.json({ url });
 });
+
+
 
 // Debugging log to confirm server startup
 console.log('Server loaded. Routes about to be registered.');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import DocumentUpload from '../components/DocumentUpload';
@@ -26,7 +26,7 @@ const decodePolyline = (encoded) => {
 };
 
 const RiderDashboard = () => {
-  // Dashboard states (the ones from your original code)
+  // Dashboard states
   const [profile, setProfile] = useState(null);
   const [pickupLocation, setPickupLocation] = useState('');
   const [destination, setDestination] = useState('');
@@ -42,11 +42,15 @@ const RiderDashboard = () => {
   const [expandedRide, setExpandedRide] = useState(null);
   const [rideSummary, setRideSummary] = useState(null);
   const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
-
-  // New state to control which tab is active
   const [activeTab, setActiveTab] = useState('rideRequest');
 
-  // Existing useEffects to load data and handle socket events...
+  // Create a ref to always hold the latest activeRide value.
+  const activeRideRef = useRef(activeRide);
+  useEffect(() => {
+    activeRideRef.current = activeRide;
+  }, [activeRide]);
+
+  // Clean local storage if no active ride exists
   useEffect(() => {
     const storedActiveRide = localStorage.getItem('activeRide');
     if (!storedActiveRide) {
@@ -55,6 +59,7 @@ const RiderDashboard = () => {
     }
   }, []);
 
+  // Load persisted preview and route
   useEffect(() => {
     const storedPreview = localStorage.getItem('ridePreview');
     const storedRoute = localStorage.getItem('route');
@@ -62,6 +67,7 @@ const RiderDashboard = () => {
     if (storedRoute) setRoute(JSON.parse(storedRoute));
   }, []);
 
+  // Load initial data using service functions
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -107,6 +113,7 @@ const RiderDashboard = () => {
     loadData();
   }, []);
 
+  // Socket setup with activeRideRef
   useEffect(() => {
     const socket = require('socket.io-client')('http://localhost:5000');
 
@@ -118,7 +125,8 @@ const RiderDashboard = () => {
     socket.on('driverAccepted', async (data) => {
       setNotification('Your ride has been accepted!');
       try {
-        const rideId = data.rideId || (activeRide && (activeRide.rideId || activeRide.id));
+        // Use the ref to access the latest activeRide
+        const rideId = data.rideId || (activeRideRef.current && (activeRideRef.current.rideId || activeRideRef.current.id));
         if (!rideId) return;
         const response = await api.get('/rides/accepted-ride-details', { params: { rideId } });
         setActiveRide(response.data);
@@ -139,8 +147,8 @@ const RiderDashboard = () => {
 
     socket.on('rideCompleted', (data) => {
       setNotification('Your ride is complete!');
-      const rideDetails = activeRide
-        ? { ...activeRide }
+      const rideDetails = activeRideRef.current
+        ? { ...activeRideRef.current }
         : { 
             id: data.rideId, 
             driver_id: data.driver_id, 
@@ -200,21 +208,34 @@ const RiderDashboard = () => {
   const handlePreviewRide = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/rides/preview', { pickupLocation, destination });
-      setRidePreview(response.data);
+      // Get preview details (distance, duration, fare, etc.)
+      const previewResponse = await api.post('/rides/preview', { pickupLocation, destination });
+      
+      // Get route details to extract the encoded polyline
+      const routeData = await fetchRouteData(pickupLocation, destination);
+      const encodedPolyline = routeData.routes[0].overview_polyline.points;
+      
+      // Merge the polyline into the preview data
+      setRidePreview({ ...previewResponse.data, encodedPolyline });
       setNotification('Ride preview loaded.');
-      const data = await fetchRouteData(pickupLocation, destination);
-      const encodedPolyline = data.routes[0].overview_polyline.points;
+      
+      // Update the MapSection route if needed
       setRoute(decodePolyline(encodedPolyline));
     } catch (error) {
       console.error('Error previewing ride:', error);
       setNotification('Failed to preview ride.');
     }
   };
+  
 
   const handleRequestRide = async () => {
     try {
-      const response = await api.post('/rides/request', { pickupLocation, destination });
+      // Pass encodedPolyline from ridePreview along with pickupLocation and destination.
+      const response = await api.post('/rides/request', { 
+        pickupLocation, 
+        destination,
+        encodedPolyline: ridePreview.encodedPolyline
+      });
       setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId || response.data.id}`);
       setRidePreview(null);
       setActiveRide({ ...response.data, status: response.data.status || 'requested' });
