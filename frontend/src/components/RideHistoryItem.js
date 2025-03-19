@@ -9,9 +9,7 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
       axios
         .get('http://localhost:5000/static-map', {
           params: {
-            center: ride.pickup_location,
-            zoom: 10,
-            path: ride.encoded_polyline, // must match the column name from your DB
+            path: ride.encoded_polyline,
             pickup: ride.pickup_location,
             destination: ride.destination,
           },
@@ -68,7 +66,8 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
               alt="Static map"
               style={{
                 width: '100%',
-                height: '300px',
+                height: 'auto',
+                maxHeight: '400px',
                 objectFit: 'cover',
                 marginTop: '0.5rem',
               }}
