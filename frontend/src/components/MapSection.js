@@ -1,4 +1,3 @@
-// src/components/MapSection.js
 import React from 'react';
 import InteractiveMap from './InteractiveMap';
 

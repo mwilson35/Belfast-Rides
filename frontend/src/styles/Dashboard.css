@@ -1,11 +1,16 @@
 /* Dashboard Container */
 .dashboard-container {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    overflow: hidden;
-    background: #f4f6f8;
-  }
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #f4f6f8, #e9ecef); /* subtle gradient */
+  /* Alternatively, use a background image:
+  background: url('/path/to/your/image.jpg') no-repeat center center;
+  background-size: cover;
+  */
+}
+
   
   /* Dashboard Header */
   .dashboard-header {
@@ -40,11 +45,12 @@
   /* Section Cards */
   .section-card {
     background: #fff;
-    padding: 1rem;
-    margin-top: 1rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
+  
   
   /* Static Map for Ride History */
   .ride-history-map {
@@ -55,4 +61,75 @@
     border-radius: 8px;
     margin-top: 0.5rem;
   }
+  .dashboard-tabs button {
+    min-width: 120px;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    font-size: 1rem;
+    border-radius: 4px;
+  }
+  .dashboard-tabs button.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+  }
+  .map-section {
+    width: 100%;
+    height: 50vh; /* half the viewport height, adjust as needed */
+    background-color: #f0f2f5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .map-section #map {
+    width: 100%;
+    height: 100%;
+  }
+  body {
+    font-family: 'Roboto', sans-serif;
+  }
   
+  .dashboard-tabs button {
+    min-width: 120px;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  .dashboard-tabs button.active,
+  .dashboard-tabs button:hover {
+    background-color: #007bff;
+    color: #fff;
+  }
+  
+  .map-section {
+    width: 100%;
+    height: 80vh; /* desired height */
+    background-color: #f0f2f5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  
+  /* For mobile devices, make the map taller */
+  @media (max-width: 768px) {
+    .map-section {
+      height: 80vh;
+    }
+  }
+  
+  
+  /* For mobile devices */
+  @media (max-width: 768px) {
+    .map-section {
+      height: 70vh;
+    }
+  }
+  /* Make the interactive map fill its parent container */
+.interactive-map-container {
+  width: 100%;
+  height: 100%;
+}
