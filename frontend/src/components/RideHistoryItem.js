@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/RideHistory.css'; // Import RideHistory styles
 
 const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
   const [mapUrl, setMapUrl] = useState('');
@@ -25,26 +26,23 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
   }, [expanded, ride]);
 
   return (
-    <li
-      key={ride.id}
-      style={{ borderBottom: '1px solid #ccc', padding: '0.5rem', cursor: 'pointer' }}
-      onClick={onToggle}
-    >
-      <div>
+    <li className="ride-history-item" onClick={onToggle}>
+      <div className="ride-summary">
         {ride.pickup_location} to {ride.destination} - Status: {ride.status}
       </div>
-      <div style={{ marginTop: '0.5rem' }}>
+      <div className="text-end">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onRebook();
           }}
+          className="btn btn-outline-primary rebook-btn"
         >
           Rebook Ride
         </button>
       </div>
       {expanded && (
-        <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#555' }}>
+        <div className="ride-history-details">
           <p>
             <strong>Date:</strong>{' '}
             {ride.created_at ? new Date(ride.created_at).toLocaleString() : 'N/A'}
@@ -64,13 +62,7 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
             <img
               src={mapUrl}
               alt="Static map"
-              style={{
-                width: '100%',
-                height: 'auto',
-                maxHeight: '400px',
-                objectFit: 'cover',
-                marginTop: '0.5rem',
-              }}
+              className="ride-history-map"
             />
           ) : (
             <p>Loading map...</p>

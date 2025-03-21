@@ -1,5 +1,6 @@
 import React from 'react';
 import RideHistoryItem from './RideHistoryItem';
+import '../styles/RideHistory.css'; // Import RideHistory styles
 
 const RideHistory = ({
   rideHistory,
@@ -12,7 +13,7 @@ const RideHistory = ({
     <section className="ride-history-section">
       <h2>Your Ride History</h2>
       {rideHistory && rideHistory.length ? (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul className="ride-history-list">
           {rideHistory.map((ride) => (
             <RideHistoryItem
               key={ride.id}
@@ -24,8 +25,12 @@ const RideHistory = ({
               onRebook={() => {
                 setPickupLocation(ride.pickup_location);
                 setDestination(ride.destination);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const rideRequestSection = document.getElementById('rideRequest');
+                if (rideRequestSection) {
+                  rideRequestSection.scrollIntoView({ behavior: 'smooth' });
+                }
               }}
+              
             />
           ))}
         </ul>

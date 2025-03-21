@@ -1,0 +1,70 @@
+/* RideHistory.css */
+
+/* Container for the entire ride history section */
+.ride-history-section {
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 1rem 0;
+  }
+  
+  /* Heading styling */
+  .ride-history-section h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #007bff;
+  }
+  
+  /* List styling */
+  .ride-history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Ride history item card */
+  .ride-history-item {
+    border-bottom: 1px solid #ccc;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .ride-history-item:hover {
+    background: #f9f9f9;
+  }
+  
+  /* Summary text styling inside each ride history item */
+  .ride-summary {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #333;
+  }
+  
+  /* Rebook button styling */
+  .rebook-btn {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  /* Expanded details section styling */
+  .ride-history-details {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .ride-history-details p {
+    margin: 0.25rem 0;
+  }
+  
+  /* Static map image styling */
+  .ride-history-map {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+    margin-top: 0.5rem;
+  }
+  

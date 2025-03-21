@@ -10,7 +10,7 @@ const RideRequest = ({
   handlePreviewRide,
   handleRequestRide,
 }) => (
-  <section className="ride-request-section container my-4">
+<section id="rideRequest" className="ride-request-section container my-4">
     <h2 className="mb-3 text-center">Request a Ride</h2>
     <form onSubmit={handlePreviewRide}>
       <div className="form-group mb-3">
