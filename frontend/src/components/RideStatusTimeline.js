@@ -1,8 +1,8 @@
 // src/components/RideStatusTimeline.js
 import React from 'react';
+import '../styles/Dashboard.css'; // Ensure this file is imported so our CSS applies
 
 const RideStatusTimeline = ({ status }) => {
-  // Define the ride statuses in order
   const statuses = ['requested', 'accepted', 'arrived', 'in progress', 'completed'];
   const currentIndex = statuses.indexOf(status);
 
@@ -11,6 +11,7 @@ const RideStatusTimeline = ({ status }) => {
       {statuses.map((s, i) => (
         <div key={s} style={{ flex: 1, textAlign: 'center' }}>
           <div
+            className="ride-status-text"
             style={{
               fontWeight: i <= currentIndex ? 'bold' : 'normal',
               color: i <= currentIndex ? 'green' : 'gray',

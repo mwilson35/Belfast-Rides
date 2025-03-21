@@ -4,132 +4,164 @@
   width: 100%;
   min-height: 100vh;
   overflow-y: auto;
-  background: linear-gradient(135deg, #f4f6f8, #e9ecef); /* subtle gradient */
-  /* Alternatively, use a background image:
-  background: url('/path/to/your/image.jpg') no-repeat center center;
-  background-size: cover;
-  */
+  background: linear-gradient(135deg, #f4f6f8, #e9ecef);
 }
 
-  
-  /* Dashboard Header */
-  .dashboard-header {
-    padding: 1rem;
-    background: white;
-    border-bottom: 1px solid #eaeaea;
-  }
-  
-  /* Tab navigation styling */
-  .tab-navigation {
-    display: flex;
-    overflow-x: auto;
-    gap: 1rem;
-    padding: 0.5rem;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  .tab-navigation button {
-    padding: 0.5rem 1rem;
-    background: #f4f4f4;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .tab-navigation button.active,
-  .tab-navigation button:hover {
-    background: #007bff;
-    color: white;
-  }
-  
-  /* Section Cards */
-  .section-card {
-    background: #fff;
-    padding: 1.5rem;
-    margin: 1rem 0;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  
-  /* Static Map for Ride History */
-  .ride-history-map {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-  }
-  .dashboard-tabs button {
-    min-width: 120px;
-    padding: 0.5rem 1rem;
-    margin: 0.25rem;
-    font-size: 1rem;
-    border-radius: 4px;
-  }
-  .dashboard-tabs button.active {
-    background-color: #007bff;
-    color: #fff;
-    border-color: #007bff;
-  }
-  .map-section {
-    width: 100%;
-    height: 50vh; /* half the viewport height, adjust as needed */
-    background-color: #f0f2f5;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .map-section #map {
-    width: 100%;
-    height: 100%;
-  }
-  body {
-    font-family: 'Roboto', sans-serif;
-  }
-  
-  .dashboard-tabs button {
-    min-width: 120px;
-    padding: 0.5rem 1rem;
-    margin: 0.25rem;
-    font-size: 1rem;
-    border-radius: 4px;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  
-  .dashboard-tabs button.active,
-  .dashboard-tabs button:hover {
-    background-color: #007bff;
-    color: #fff;
-  }
-  
-  .map-section {
-    width: 100%;
-    height: 80vh; /* desired height */
-    background-color: #f0f2f5;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  
-  /* For mobile devices, make the map taller */
-  @media (max-width: 768px) {
-    .map-section {
-      height: 80vh;
-    }
-  }
-  
-  
-  /* For mobile devices */
-  @media (max-width: 768px) {
-    .map-section {
-      height: 70vh;
-    }
-  }
-  /* Make the interactive map fill its parent container */
+/* Dashboard Header */
+.dashboard-header {
+  padding: 1rem;
+  background: white;
+  border-bottom: 1px solid #eaeaea;
+}
+
+/* Tab navigation styling */
+.tab-navigation {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-navigation button {
+  padding: 0.5rem 1rem;
+  background: #f4f4f4;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+}
+
+.tab-navigation button.active,
+.tab-navigation button:hover {
+  background: #007bff;
+  color: white;
+}
+
+/* Section Cards */
+.section-card {
+  background: #fff;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Static Map for Ride History */
+.ride-history-map {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+/* Dashboard Tabs */
+.dashboard-tabs button {
+  min-width: 120px;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.dashboard-tabs button.active,
+.dashboard-tabs button:hover {
+  background-color: #007bff;
+  color: #fff;
+}
+
+/* Map Section */
+.map-section {
+  width: 100%;
+  height: 80vh; /* Set a single desired height */
+  background-color: #f0f2f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.map-section #map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Interactive Map Container */
 .interactive-map-container {
   width: 100%;
   height: 100%;
+}
+
+/* Progress bar container */
+.progress-bar-container {
+  width: 100%;
+  height: 4rem; /* Using rem for consistent sizing */
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+/* Progress bar fill */
+.progress-bar {
+  height: 100%;
+  /* Force the blue fill to be visible */
+  background-color: #007bff !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Progress text styling */
+.progress-text {
+  font-size: 0.8rem; /* Smaller text */
+  color: #fff;
+  white-space: nowrap;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .progress-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* Ride Status Timeline Container */
+.ride-status-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;    /* Keep items on one horizontal line */
+  overflow-x: auto;     /* Allow horizontal scrolling if needed */
+  margin-bottom: 1rem;
+  gap: 0.5rem;          /* Add space between status items */
+}
+
+/* Ride Status Text */
+.ride-status-text {
+  font-size: 0.8rem; /* Smaller text */
+  white-space: nowrap;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .ride-status-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* Additional Mobile Layout Adjustments */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 0.5rem;
+  }
+  
+  .section-card {
+    padding: 1rem;
+    margin: 0.5rem 0;
+  }
 }
