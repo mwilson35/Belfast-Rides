@@ -1,0 +1,40 @@
+/* RideRequest.css */
+
+/* Base styles for the request section */
+.ride-request-section {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #333;
+  }
+  
+  /* Header styling */
+  .ride-request-section h2 {
+    font-weight: 600;
+    color: #007bff; /* Blue header */
+  }
+  
+  /* Label styling */
+  .ride-request-section label {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  
+  /* Input field styling */
+  .ride-request-section .form-control {
+    border-radius: 4px;
+    font-size: 0.9rem;
+    padding: 0.6rem;
+  }
+  
+  /* Button styling */
+  .ride-request-section .btn {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  /* Ride Preview Card Styling */
+  .ride-preview {
+    background-color: #f8f9fa;
+    font-size: 0.9rem;
+    color: #444;
+  }
+  

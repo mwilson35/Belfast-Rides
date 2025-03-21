@@ -1,5 +1,5 @@
-// src/components/RideRequest.js
 import React from 'react';
+import '../styles/RideRequest.css'; // Link to the CSS file located at C:\Users\user\Documents\Projects\Belfast-Rides\frontend\src\styles\RideRequest.css
 
 const RideRequest = ({
   pickupLocation,
@@ -10,36 +10,44 @@ const RideRequest = ({
   handlePreviewRide,
   handleRequestRide,
 }) => (
-  <section className="ride-request-section">
-    <h2>Request a Ride</h2>
+  <section className="ride-request-section container my-4">
+    <h2 className="mb-3 text-center">Request a Ride</h2>
     <form onSubmit={handlePreviewRide}>
-      <div>
-        <label>Pickup Location:</label>
+      <div className="form-group mb-3">
+        <label htmlFor="pickupLocation" className="form-label">Pickup Location:</label>
         <input
           type="text"
+          id="pickupLocation"
+          className="form-control"
           value={pickupLocation}
           onChange={(e) => setPickupLocation(e.target.value)}
           required
         />
       </div>
-      <div>
-        <label>Destination:</label>
+      <div className="form-group mb-3">
+        <label htmlFor="destination" className="form-label">Destination:</label>
         <input
           type="text"
+          id="destination"
+          className="form-control"
           value={destination}
           onChange={(e) => setDestination(e.target.value)}
           required
         />
       </div>
-      <button type="submit">Preview Ride</button>
+      <div className="text-center">
+        <button type="submit" className="btn btn-primary">Preview Ride</button>
+      </div>
     </form>
     {ridePreview && (
-      <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-        <p><strong>Ride Preview:</strong></p>
-        <p>Distance: {ridePreview.distance}</p>
-        <p>Duration: {ridePreview.duration}</p>
-        <p>Estimated Fare: {ridePreview.estimatedFare}</p>
-        <button onClick={handleRequestRide}>Request Ride</button>
+      <div className="ride-preview mt-3 p-3 border rounded shadow-sm bg-light">
+        <p className="mb-2"><strong>Ride Preview:</strong></p>
+        <p className="mb-1">Distance: {ridePreview.distance}</p>
+        <p className="mb-1">Duration: {ridePreview.duration}</p>
+        <p className="mb-2">Estimated Fare: {ridePreview.estimatedFare}</p>
+        <div className="text-center">
+          <button onClick={handleRequestRide} className="btn btn-success">Request Ride</button>
+        </div>
       </div>
     )}
   </section>
