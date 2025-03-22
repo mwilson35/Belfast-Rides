@@ -1,31 +1,36 @@
-// src/pages/DriverDashboard.js
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import io from 'socket.io-client';
+import AvailableRidesList from '../components/AvailableRidesList';
+import MapSection from '../components/MapSection';
+import '../styles/DriverDashboard.css';
 
 const DriverDashboard = () => {
   const [availableRides, setAvailableRides] = useState([]);
   const [message, setMessage] = useState('');
   const [rideAccepted, setRideAccepted] = useState(false);
+  const [mapZoom, setMapZoom] = useState(12); // Default zoom level
 
   // Fetch available rides when the component mounts
   useEffect(() => {
     fetchAvailableRides();
   }, []);
 
-  // Start sending live location updates only after a ride is accepted
+  // When a ride is accepted, update the map zoom and start sending live location updates
   useEffect(() => {
-    if (!rideAccepted) return; // Do nothing if no ride accepted
+    if (!rideAccepted) return;
+
+    // Zoom in when a ride is accepted
+    setMapZoom(16);
 
     const socket = io("http://localhost:5000");
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        // Emit the driver's current location to the server
+        // Optionally, you can also send location updates with the new zoom level in your map component if needed.
         socket.emit("driverLocationUpdate", { lat: latitude, lng: longitude });
-        console.log(`Location updated: ${latitude}, ${longitude}`);
       },
       (error) => {
         console.error("Error watching location:", error);
@@ -33,7 +38,7 @@ const DriverDashboard = () => {
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
 
-    // Cleanup: stop watching location and disconnect socket on unmount or when rideAccepted becomes false
+    // Cleanup on unmount or when rideAccepted becomes false
     return () => {
       navigator.geolocation.clearWatch(watchId);
       socket.disconnect();
@@ -42,20 +47,16 @@ const DriverDashboard = () => {
 
   const fetchAvailableRides = () => {
     api.get('/rides/available')
-      .then(response => {
-        setAvailableRides(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching available rides:', error);
-      });
+      .then(response => setAvailableRides(response.data))
+      .catch(error => console.error('Error fetching available rides:', error));
   };
 
   const handleAcceptRide = (rideId) => {
     api.post('/rides/accept', { rideId })
       .then(response => {
         setMessage(`Ride ${rideId} accepted successfully!`);
-        // Set the flag to start sending location updates
         setRideAccepted(true);
+        setMapZoom(16); // Zoom in on the map when ride is accepted
         // Optionally, refresh the available rides list
         fetchAvailableRides();
       })
@@ -66,24 +67,17 @@ const DriverDashboard = () => {
   };
 
   return (
-    <div>
+    <div className="driver-dashboard">
       <Navbar />
-      <div style={{ padding: '1rem' }}>
-        <h1>Driver Dashboard</h1>
-        {message && <p>{message}</p>}
-        <h2>Available Rides</h2>
-        {availableRides && availableRides.length ? (
-          <ul>
-            {availableRides.map((ride) => (
-              <li key={ride.id}>
-                {ride.pickup_location} to {ride.destination} - Status: {ride.status}
-                <button onClick={() => handleAcceptRide(ride.id)}>Accept Ride</button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No available rides at the moment.</p>
-        )}
+      <div className="driver-dashboard-content">
+        {/* The map takes up most of the screen */}
+        <MapSection zoom={mapZoom} />
+        {/* Side panel for ride requests */}
+        <div className="ride-requests-panel">
+          <h2>Available Rides</h2>
+          {message && <div className="alert alert-info">{message}</div>}
+          <AvailableRidesList rides={availableRides} onAcceptRide={handleAcceptRide} />
+        </div>
       </div>
     </div>
   );

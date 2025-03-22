@@ -1,7 +1,7 @@
 import React from 'react';
 import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
 
-const InteractiveMap = ({ markers, route }) => {
+const InteractiveMap = ({ markers = [], route = [] }) => {
   const defaultCenter = route && route.length > 0 ? route[0] : { lat: 54.5973, lng: -5.9301 };
 
   return (
@@ -11,10 +11,10 @@ const InteractiveMap = ({ markers, route }) => {
         center={defaultCenter}
         zoom={12}
       >
-        {markers.map((marker) => (
-          <Marker key={marker.id} position={{ lat: marker.lat, lng: marker.lng }} />
+        {markers.map((marker, index) => (
+          <Marker key={marker.id || index} position={{ lat: marker.lat, lng: marker.lng }} />
         ))}
-        {route && (
+        {route && route.length > 0 && (
           <>
             <Polyline
               path={route}
