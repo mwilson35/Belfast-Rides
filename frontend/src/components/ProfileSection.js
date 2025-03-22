@@ -1,4 +1,5 @@
 import React from 'react';
+import '../styles/ProfileSection.css'; // Optional custom styling
 
 const ProfileSection = ({ profile }) => {
   // Construct a full URL. If profilePicUrl doesn't start with "http", prefix it.
@@ -10,15 +11,15 @@ const ProfileSection = ({ profile }) => {
       : null;
 
   return (
-    <section className="profile-section">
-      <h2>Your Profile</h2>
+    <section className="profile-section container my-4">
+      <h2 className="text-center mb-3">Your Profile</h2>
       {profile ? (
-        <div>
+        <div className="card p-3 shadow-sm">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt="Profile"
-              style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+              className="profile-img mb-3"
             />
           ) : (
             <p>No profile picture available.</p>

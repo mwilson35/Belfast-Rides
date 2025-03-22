@@ -1,6 +1,6 @@
-// src/components/ChatBox.js
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import '../styles/ChatBox.css'; // Import custom ChatBox styles
 
 const ChatBox = () => {
   const [socket, setSocket] = useState(null);
@@ -43,25 +43,29 @@ const ChatBox = () => {
   };
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '1rem' }}>
-      <h3>Chat</h3>
-      <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '0.5rem' }}>
+    <div className="chat-box card p-3 mt-3">
+      <h3 className="card-title">Chat</h3>
+      <div className="chat-messages mb-3">
         {messages.map((msg, index) => (
-          <div key={index} style={{ marginBottom: '0.5rem' }}>
+          <div key={index} className="chat-message mb-2">
             <strong>{msg.sender}: </strong>
             <span>{msg.message}</span>
           </div>
         ))}
       </div>
-      <input
-        type="text"
-        value={messageInput}
-        onChange={(e) => setMessageInput(e.target.value)}
-        onKeyDown={handleEnterKey}
-        placeholder="Type your message..."
-        style={{ width: '80%', marginRight: '0.5rem' }}
-      />
-      <button onClick={sendMessage}>Send</button>
+      <div className="input-group">
+        <input
+          type="text"
+          className="form-control"
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          onKeyDown={handleEnterKey}
+          placeholder="Type your message..."
+        />
+        <button onClick={sendMessage} className="btn btn-primary">
+          Send
+        </button>
+      </div>
     </div>
   );
 };
