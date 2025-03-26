@@ -6,6 +6,21 @@ import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import '../styles/DriverDashboard.css';
 
+// Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 const geocodeAddress = address =>
   new Promise((resolve, reject) => {
     const geocoder = new window.google.maps.Geocoder();
@@ -27,6 +42,7 @@ const DriverDashboard = () => {
   const [destination, setDestination] = useState(null);
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
+  const [arrivedPingSent, setArrivedPingSent] = useState(false);
 
   const fetchAvailableRides = () => {
     api.get('/rides/available')
@@ -38,6 +54,7 @@ const DriverDashboard = () => {
     fetchAvailableRides();
   }, []);
 
+  // Socket and geolocation watcher: update driver location and check for arrival.
   useEffect(() => {
     const socket = io('http://localhost:5000');
     const watchId = navigator.geolocation.watchPosition(
@@ -45,32 +62,42 @@ const DriverDashboard = () => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
         socket.emit('driverLocationUpdate', loc);
+  
+        // If there's a pickup location and an accepted ride, check the distance.
+        if (riderLocation && acceptedRide && !arrivedPingSent) {
+          const distance = getDistanceFromLatLonInMeters(
+            loc.lat,
+            loc.lng,
+            riderLocation.lat,
+            riderLocation.lng
+          );
+          console.log('Distance to pickup:', distance); // Debug log
+          if (distance < 55) {
+            socket.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
+            setMessage('Driver has arrived at pickup location.');
+            setArrivedPingSent(true);
+          }
+          
+        }
       },
       err => console.error(err),
       { enableHighAccuracy: true }
     );
-
-    // (Optional) Listen for other ride events if needed.
-    // For example, if you emit a "rideStarted" event from the server,
-    // you could also listen for it here to update state.
-    // socket.on('rideStarted', () => {
-    //   setMessage('Ride in progress. Navigating to destination.');
-    //   setRiderLocation(null);
-    // });
-
     return () => {
       navigator.geolocation.clearWatch(watchId);
       socket.disconnect();
     };
-  }, []);
+  }, [riderLocation, acceptedRide, arrivedPingSent]);
+  
 
   const handleAcceptRide = async rideId => {
     try {
       await api.post('/rides/accept', { rideId });
       setMessage(`Ride ${rideId} accepted!`);
-
       const ride = availableRides.find(r => r.id === rideId);
       setAcceptedRide(ride);
+      // Reset arrival flag for new ride.
+      setArrivedPingSent(false);
       if (ride?.pickup_location) {
         setRiderLocation(await geocodeAddress(ride.pickup_location));
       }
@@ -97,14 +124,14 @@ const DriverDashboard = () => {
     }
   };
 
-  // Use the client-side DirectionsService for real-time route updates.
+  // Use client-side DirectionsService for real-time route updates.
   useEffect(() => {
     let intervalId;
     const fetchClientSideDirections = () => {
       if (driverLocation && (riderLocation || destination)) {
         const directionsService = new window.google.maps.DirectionsService();
         const origin = new window.google.maps.LatLng(driverLocation.lat, driverLocation.lng);
-        // When a pickup exists, route to pickup; otherwise, route to destination.
+        // Route to pickup if it exists; otherwise, route to destination.
         const target = riderLocation
           ? new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng)
           : new window.google.maps.LatLng(destination.lat, destination.lng);
@@ -126,7 +153,7 @@ const DriverDashboard = () => {
     };
 
     fetchClientSideDirections();
-    intervalId = setInterval(fetchClientSideDirections, 30000); // Update every 30 seconds
+    intervalId = setInterval(fetchClientSideDirections, 30000); // update every 30 seconds
 
     return () => {
       if (intervalId) clearInterval(intervalId);
