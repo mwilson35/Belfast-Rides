@@ -25,6 +25,7 @@ const DriverDashboard = () => {
   const [driverLocation, setDriverLocation] = useState(null);
   const [riderLocation, setRiderLocation] = useState(null);
   const [destination, setDestination] = useState(null);
+  const [directions, setDirections] = useState(null);
 
   const fetchAvailableRides = () => {
     api.get('/rides/available')
@@ -32,7 +33,9 @@ const DriverDashboard = () => {
       .catch(err => console.error('Error fetching available rides:', err));
   };
 
-  useEffect(fetchAvailableRides, []);
+  useEffect(() => {
+    fetchAvailableRides();
+  }, []);
 
   useEffect(() => {
     const socket = io('http://localhost:5000');
@@ -70,6 +73,42 @@ const DriverDashboard = () => {
     }
   };
 
+  // Use the client-side DirectionsService for real-time route updates.
+  useEffect(() => {
+    let intervalId;
+    const fetchClientSideDirections = () => {
+      if (driverLocation && (riderLocation || destination)) {
+        const directionsService = new window.google.maps.DirectionsService();
+        const origin = new window.google.maps.LatLng(driverLocation.lat, driverLocation.lng);
+        // Use the pickup location if available; otherwise, use the destination.
+        const target = riderLocation 
+          ? new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng)
+          : new window.google.maps.LatLng(destination.lat, destination.lng);
+        directionsService.route(
+          {
+            origin: origin,
+            destination: target,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (result, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK || status === 'OK') {
+              setDirections(result);
+            } else {
+              console.error('Error fetching directions:', result);
+            }
+          }
+        );
+      }
+    };
+
+    fetchClientSideDirections();
+    intervalId = setInterval(fetchClientSideDirections, 30000); // update every 30 seconds
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [driverLocation, riderLocation, destination]);
+
   const markers = [];
   if (driverLocation) markers.push({ id: 'driver', ...driverLocation, label: 'D' });
   if (riderLocation) markers.push({ id: 'pickup', ...riderLocation, label: 'P' });
@@ -85,6 +124,7 @@ const DriverDashboard = () => {
             center={driverLocation}
             zoom={16}
             autoFit={true}
+            directions={directions}
           />
         </div>
         <div className="ride-requests-panel">
