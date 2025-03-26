@@ -26,6 +26,7 @@ const DriverDashboard = () => {
   const [riderLocation, setRiderLocation] = useState(null);
   const [destination, setDestination] = useState(null);
   const [directions, setDirections] = useState(null);
+  const [acceptedRide, setAcceptedRide] = useState(null);
 
   const fetchAvailableRides = () => {
     api.get('/rides/available')
@@ -48,6 +49,15 @@ const DriverDashboard = () => {
       err => console.error(err),
       { enableHighAccuracy: true }
     );
+
+    // (Optional) Listen for other ride events if needed.
+    // For example, if you emit a "rideStarted" event from the server,
+    // you could also listen for it here to update state.
+    // socket.on('rideStarted', () => {
+    //   setMessage('Ride in progress. Navigating to destination.');
+    //   setRiderLocation(null);
+    // });
+
     return () => {
       navigator.geolocation.clearWatch(watchId);
       socket.disconnect();
@@ -60,6 +70,7 @@ const DriverDashboard = () => {
       setMessage(`Ride ${rideId} accepted!`);
 
       const ride = availableRides.find(r => r.id === rideId);
+      setAcceptedRide(ride);
       if (ride?.pickup_location) {
         setRiderLocation(await geocodeAddress(ride.pickup_location));
       }
@@ -73,6 +84,19 @@ const DriverDashboard = () => {
     }
   };
 
+  const handleStartRide = async () => {
+    if (!acceptedRide) return;
+    try {
+      const response = await api.post('/rides/start', { rideId: acceptedRide.id });
+      setMessage(response.data.message || 'Ride started successfully');
+      // Clear the pickup marker so that the route recalculates to the destination.
+      setRiderLocation(null);
+    } catch (error) {
+      console.error('Error starting ride:', error);
+      setMessage('Failed to start ride.');
+    }
+  };
+
   // Use the client-side DirectionsService for real-time route updates.
   useEffect(() => {
     let intervalId;
@@ -80,8 +104,8 @@ const DriverDashboard = () => {
       if (driverLocation && (riderLocation || destination)) {
         const directionsService = new window.google.maps.DirectionsService();
         const origin = new window.google.maps.LatLng(driverLocation.lat, driverLocation.lng);
-        // Use the pickup location if available; otherwise, use the destination.
-        const target = riderLocation 
+        // When a pickup exists, route to pickup; otherwise, route to destination.
+        const target = riderLocation
           ? new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng)
           : new window.google.maps.LatLng(destination.lat, destination.lng);
         directionsService.route(
@@ -102,7 +126,7 @@ const DriverDashboard = () => {
     };
 
     fetchClientSideDirections();
-    intervalId = setInterval(fetchClientSideDirections, 30000); // update every 30 seconds
+    intervalId = setInterval(fetchClientSideDirections, 30000); // Update every 30 seconds
 
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -130,10 +154,17 @@ const DriverDashboard = () => {
         <div className="ride-requests-panel">
           <h2>Available Rides</h2>
           {message && <div className="alert alert-info">{message}</div>}
-          <AvailableRidesList
-            rides={availableRides}
-            onAcceptRide={handleAcceptRide}
-          />
+          { !acceptedRide ? (
+            <AvailableRidesList
+              rides={availableRides}
+              onAcceptRide={handleAcceptRide}
+            />
+          ) : (
+            <div>
+              <p>Ride {acceptedRide.id} accepted. Ready to start?</p>
+              <button onClick={handleStartRide}>Start Ride</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
-POST http://localhost:5000/rides/accept
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQyNjYzOTk5LCJleHAiOjE3NDI2Njc1OTl9.coIGM66oabxyKP53px2lwG0u0hwNpr54rU7mMoYkQ_8
+POST http://localhost:5000/rides/complete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzAsInJvbGUiOiJkcml2ZXIiLCJ2ZXJpZmllZCI6MSwiaWF0IjoxNzQzMDA5MzUzLCJleHAiOjE3NDMwMTI5NTN9.OoB7F5vn0sOijlAu-QKHEwHn7x1IS9bhssuFWjqdmJ4
 Content-Type: application/json
 
 {
-    "rideId": 301
+    "rideId": 377
 }
