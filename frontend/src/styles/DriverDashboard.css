@@ -1,26 +1,52 @@
 /* Ensure the dashboard fills the screen */
 .driver-dashboard {
-    height: 100vh;
-    overflow: hidden;
-  }
-  
-  /* Layout for the dashboard content: full-screen map with a side panel */
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Layout for the dashboard content: full-screen map with a side panel */
+.driver-dashboard-content {
+  display: flex;
+  height: calc(100vh - 56px); /* Adjust if your Navbar height differs */
+}
+
+/* The map section should flex to fill available space */
+.map-section {
+  flex: 1;
+}
+
+/* Side panel for available rides */
+.ride-requests-panel {
+  width: 300px; /* Fixed width for desktop view */
+  background: #fff;
+  overflow-y: auto;
+  padding: 1rem;
+  border-left: 1px solid #ccc;
+}
+
+/* Ensure the Google Map container fills its parent */
+.interactive-map-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  /* Stack panels vertically */
   .driver-dashboard-content {
-    display: flex;
-    height: calc(100vh - 56px); /* Adjust if your Navbar height differs */
+    flex-direction: column;
   }
   
-  /* The MapSection should flex to fill available space */
-  .driver-dashboard-content > .map-section {
-    flex: 1;
+  /* Set map height similar to the rider dashboard */
+  .map-section {
+    height: 80vh;
   }
   
-  /* Style for the side panel with available rides */
+  /* Full width for the side panel and adjust borders */
   .ride-requests-panel {
-    width: 300px; /* Fixed width for the side panel */
-    background: #fff;
-    overflow-y: auto;
-    padding: 1rem;
-    border-left: 1px solid #ccc;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #ccc;
+    padding: 0.5rem;
   }
-  
+}
