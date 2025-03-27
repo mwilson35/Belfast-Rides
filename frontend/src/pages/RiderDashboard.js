@@ -135,10 +135,12 @@ const RiderDashboard = () => {
     });
 
     socket.on('driverArrived', () => {
-      console.log('Received driverArrived event on rider dashboard'); // Debug log
+      console.log('Rider dashboard received driverArrived event');
       setNotification('Your driver has arrived!');
       setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
     });
+    
+    
     
 
     socket.on('rideInProgress', () => {

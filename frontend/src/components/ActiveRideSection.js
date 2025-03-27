@@ -10,8 +10,10 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
   let progressValue = 0;
   if (status === 'requested') progressValue = 25;
   else if (status === 'accepted') progressValue = 50;
+  else if (status === 'arrived') progressValue = 60; 
   else if (status === 'in progress') progressValue = 75;
   else if (status === 'completed') progressValue = 100;
+  
 
   return (
     <section
