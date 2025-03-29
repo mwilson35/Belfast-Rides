@@ -29,7 +29,7 @@ exports.cancelRide = (req, res) => {
     }
 
     // Update the ride's status to "canceled".
-    db.query('UPDATE rides SET status = ? WHERE id = ?', ['canceled', rideId], (err) => {
+    db.query('UPDATE rides SET status = ? WHERE id = ?', ['cancelled', rideId], (err) => {
       if (err) {
         return res.status(500).json({ message: 'Error canceling ride' });
       }
