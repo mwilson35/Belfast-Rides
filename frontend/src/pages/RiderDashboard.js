@@ -139,9 +139,6 @@ const RiderDashboard = () => {
       setNotification('Your driver has arrived!');
       setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
     });
-    
-    
-    
 
     socket.on('rideInProgress', () => {
       setNotification('Your ride is now in progress!');
@@ -210,6 +207,24 @@ const RiderDashboard = () => {
       if (intervalId) clearInterval(intervalId);
     };
   }, [activeRide, driverLocation, destination]);
+
+  // Poll active ride status as a fallback for missed socket events.
+  useEffect(() => {
+    const pollActiveRideStatus = async () => {
+      try {
+        const activeRideData = await fetchActiveRide();
+        if (activeRideData && activeRideData.status === 'arrived') {
+          setActiveRide(prev => (prev?.status !== 'arrived' ? activeRideData : prev));
+          setNotification('Your driver has arrived!');
+        }
+      } catch (error) {
+        console.error('Error polling active ride status:', error);
+      }
+    };
+
+    const intervalId = setInterval(pollActiveRideStatus, 10000); // poll every 10 seconds
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();

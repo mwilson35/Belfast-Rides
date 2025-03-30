@@ -73,10 +73,12 @@ const DriverDashboard = () => {
           );
           console.log('Distance to pickup:', distance); // Debug log
           if (distance < 55) {
-            socket.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
-            setMessage('Driver has arrived at pickup location.');
-            setArrivedPingSent(true);
+            setTimeout(() => {
+              socket.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
+              setArrivedPingSent(true);
+            }, 2000); // 2-second delay for testing
           }
+          
           
         }
       },

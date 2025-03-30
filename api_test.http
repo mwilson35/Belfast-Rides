@@ -1,7 +1,7 @@
 POST http://localhost:5000/rides/complete
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImRyaXZlciIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDMxNTc5OTMsImV4cCI6MTc0MzE2MTU5M30.UIwnEvSl53aTJBwZustVLK9rO6oR2SRn_L2MQywIcKg
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImRyaXZlciIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDMzMzQ3MTgsImV4cCI6MTc0MzMzODMxOH0.luJwU53amXA6S968wf3EA5xOXy_YYhW7hN4MOOyou9s
 Content-Type: application/json
 
 {
-    "rideId": 6
+    "rideId": 16
 }
