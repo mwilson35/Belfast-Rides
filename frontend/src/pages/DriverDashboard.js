@@ -63,7 +63,7 @@ const DriverDashboard = () => {
         setDriverLocation(loc);
         socket.emit('driverLocationUpdate', loc);
   
-        // If there's a pickup location and an accepted ride, check the distance.
+        // Check for arrival if there's a pickup location and an accepted ride.
         if (riderLocation && acceptedRide && !arrivedPingSent) {
           const distance = getDistanceFromLatLonInMeters(
             loc.lat,
@@ -71,15 +71,13 @@ const DriverDashboard = () => {
             riderLocation.lat,
             riderLocation.lng
           );
-          console.log('Distance to pickup:', distance); // Debug log
+          console.log('Distance to pickup:', distance);
           if (distance < 55) {
             setTimeout(() => {
               socket.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
               setArrivedPingSent(true);
-            }, 2000); // 2-second delay for testing
+            }, 2000);
           }
-          
-          
         }
       },
       err => console.error(err),
@@ -91,14 +89,12 @@ const DriverDashboard = () => {
     };
   }, [riderLocation, acceptedRide, arrivedPingSent]);
   
-
   const handleAcceptRide = async rideId => {
     try {
       await api.post('/rides/accept', { rideId });
       setMessage(`Ride ${rideId} accepted!`);
       const ride = availableRides.find(r => r.id === rideId);
       setAcceptedRide(ride);
-      // Reset arrival flag for new ride.
       setArrivedPingSent(false);
       if (ride?.pickup_location) {
         setRiderLocation(await geocodeAddress(ride.pickup_location));
@@ -118,22 +114,34 @@ const DriverDashboard = () => {
     try {
       const response = await api.post('/rides/start', { rideId: acceptedRide.id });
       setMessage(response.data.message || 'Ride started successfully');
-      // Clear the pickup marker so that the route recalculates to the destination.
       setRiderLocation(null);
+      // Update the acceptedRide status locally.
+      setAcceptedRide(prev => prev ? { ...prev, status: 'in_progress' } : prev);
     } catch (error) {
       console.error('Error starting ride:', error);
       setMessage('Failed to start ride.');
     }
   };
 
-  // Use client-side DirectionsService for real-time route updates.
+  const handleCompleteRide = async () => {
+    if (!acceptedRide) return;
+    try {
+      const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
+      setMessage(response.data.message || 'Ride completed successfully');
+      setAcceptedRide(null);
+    } catch (error) {
+      console.error('Error completing ride:', error);
+      setMessage('Failed to complete ride.');
+    }
+  };
+
+  // Client-side DirectionsService for route updates.
   useEffect(() => {
     let intervalId;
     const fetchClientSideDirections = () => {
       if (driverLocation && (riderLocation || destination)) {
         const directionsService = new window.google.maps.DirectionsService();
         const origin = new window.google.maps.LatLng(driverLocation.lat, driverLocation.lng);
-        // Route to pickup if it exists; otherwise, route to destination.
         const target = riderLocation
           ? new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng)
           : new window.google.maps.LatLng(destination.lat, destination.lng);
@@ -155,7 +163,7 @@ const DriverDashboard = () => {
     };
 
     fetchClientSideDirections();
-    intervalId = setInterval(fetchClientSideDirections, 30000); // update every 30 seconds
+    intervalId = setInterval(fetchClientSideDirections, 30000);
 
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -190,8 +198,13 @@ const DriverDashboard = () => {
             />
           ) : (
             <div>
-              <p>Ride {acceptedRide.id} accepted. Ready to start?</p>
-              <button onClick={handleStartRide}>Start Ride</button>
+              <p>Ride {acceptedRide.id} accepted.</p>
+              { acceptedRide.status !== 'in_progress' && (
+                <button onClick={handleStartRide}>Start Ride</button>
+              )}
+              { acceptedRide.status === 'in_progress' && (
+                <button onClick={handleCompleteRide}>Complete Ride</button>
+              )}
             </div>
           )}
         </div>
