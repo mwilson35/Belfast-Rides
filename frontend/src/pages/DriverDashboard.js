@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import Earnings from '../components/Earnings';
+import DocumentUpload from '../components/DocumentUpload';
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
@@ -45,7 +46,7 @@ const DriverDashboard = () => {
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  // New state to control the active tab: "rides" or "earnings"
+  // Extended state to control the active tab: "rides", "earnings", or "documents"
   const [activeTab, setActiveTab] = useState('rides');
 
   // Fetch available rides on mount
@@ -205,6 +206,12 @@ const DriverDashboard = () => {
             >
               Earnings
             </button>
+            <button 
+              className={activeTab === 'documents' ? 'active' : ''}
+              onClick={() => setActiveTab('documents')}
+            >
+              Documents
+            </button>
           </div>
           
           {/* Tab Content */}
@@ -225,6 +232,12 @@ const DriverDashboard = () => {
           )}
           {activeTab === 'earnings' && (
             <Earnings />
+          )}
+          {activeTab === 'documents' && (
+            <section className="documents-section">
+              <h2>Your Documents</h2>
+              <DocumentUpload documentType="profilePhoto" />
+            </section>
           )}
         </div>
       </div>
