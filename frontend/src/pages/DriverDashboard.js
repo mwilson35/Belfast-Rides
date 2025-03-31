@@ -7,6 +7,7 @@ import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import Earnings from '../components/Earnings';
 import DocumentUpload from '../components/DocumentUpload';
+import ProfileSection from '../components/ProfileSection';
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
@@ -46,8 +47,9 @@ const DriverDashboard = () => {
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  // Extended state to control the active tab: "rides", "earnings", or "documents"
+  // Extended state to control the active tab: "rides", "earnings", "documents", "profile"
   const [activeTab, setActiveTab] = useState('rides');
+  const [profile, setProfile] = useState(null);
 
   // Fetch available rides on mount
   const fetchAvailableRides = () => {
@@ -172,6 +174,20 @@ const DriverDashboard = () => {
     }
   };
 
+  // Fetch profile data on mount or when needed
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Changed from '/profile' to '/users/profile' to match your routes/users.js
+        const res = await api.get('/users/profile');
+        setProfile(res.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   // Prepare markers for the map
   const markers = [];
   if (driverLocation) markers.push({ id: 'driver', ...driverLocation, label: 'D' });
@@ -212,6 +228,12 @@ const DriverDashboard = () => {
             >
               Documents
             </button>
+            <button 
+              className={activeTab === 'profile' ? 'active' : ''}
+              onClick={() => setActiveTab('profile')}
+            >
+              Profile
+            </button>
           </div>
           
           {/* Tab Content */}
@@ -237,6 +259,12 @@ const DriverDashboard = () => {
             <section className="documents-section">
               <h2>Your Documents</h2>
               <DocumentUpload documentType="profilePhoto" />
+            </section>
+          )}
+          {activeTab === 'profile' && (
+            <section className="profile-section">
+              <h2>Your Profile</h2>
+              <ProfileSection profile={profile} />
             </section>
           )}
         </div>
