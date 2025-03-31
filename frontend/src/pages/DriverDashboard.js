@@ -42,11 +42,11 @@ const DriverDashboard = () => {
   const [driverLocation, setDriverLocation] = useState(null);
   const [riderLocation, setRiderLocation] = useState(null);
   const [destination, setDestination] = useState(null);
-  // Retain directions state so we can draw the route on the map.
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  const [showEarnings, setShowEarnings] = useState(false);
+  // New state to control the active tab: "rides" or "earnings"
+  const [activeTab, setActiveTab] = useState('rides');
 
   // Fetch available rides on mount
   const fetchAvailableRides = () => {
@@ -191,23 +191,40 @@ const DriverDashboard = () => {
           />
         </div>
         <div className="ride-requests-panel">
-          <h2>Available Rides</h2>
-          <button onClick={() => setShowEarnings((prev) => !prev)} style={{ marginBottom: '1rem' }}>
-            {showEarnings ? 'Hide Earnings' : 'View Earnings'}
-          </button>
-          {showEarnings && <Earnings />}
+          {/* Tab Header */}
+          <div className="tabs">
+            <button 
+              className={activeTab === 'rides' ? 'active' : ''}
+              onClick={() => setActiveTab('rides')}
+            >
+              Available Rides
+            </button>
+            <button 
+              className={activeTab === 'earnings' ? 'active' : ''}
+              onClick={() => setActiveTab('earnings')}
+            >
+              Earnings
+            </button>
+          </div>
+          
+          {/* Tab Content */}
           {message && <div className="alert alert-info">{message}</div>}
-          {!acceptedRide ? (
-            <AvailableRidesList rides={availableRides} onAcceptRide={handleAcceptRide} />
-          ) : (
-            <div>
-              <p>Ride {acceptedRide.id} accepted.</p>
-              {acceptedRide.status !== 'in_progress' ? (
-                <button onClick={handleStartRide}>Start Ride</button>
-              ) : (
-                <button onClick={handleCompleteRide}>Complete Ride</button>
-              )}
-            </div>
+          {activeTab === 'rides' && (
+            !acceptedRide ? (
+              <AvailableRidesList rides={availableRides} onAcceptRide={handleAcceptRide} />
+            ) : (
+              <div>
+                <p>Ride {acceptedRide.id} accepted.</p>
+                {acceptedRide.status !== 'in_progress' ? (
+                  <button onClick={handleStartRide}>Start Ride</button>
+                ) : (
+                  <button onClick={handleCompleteRide}>Complete Ride</button>
+                )}
+              </div>
+            )
+          )}
+          {activeTab === 'earnings' && (
+            <Earnings />
           )}
         </div>
       </div>
