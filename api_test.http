@@ -1,7 +1,2 @@
-POST http://localhost:5000/rides/complete
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImRyaXZlciIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDMzNTM3NTUsImV4cCI6MTc0MzM1NzM1NX0.heiELOpj9Lv98Iu7V2rawlCHY8jg7-SmFsn7PRDDGHc
-Content-Type: application/json
-
-{
-    "rideId": 34
-}
+GET http://localhost:5000/driver/earnings
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImRyaXZlciIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDM0MjkzMzgsImV4cCI6MTc0MzQzMjkzOH0.siRvD3UkKY3r3IUDN6OxQSiL-_KtGrepXii0oOVO3VU

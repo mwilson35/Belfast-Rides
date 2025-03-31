@@ -1,9 +1,11 @@
+// src/pages/DriverDashboard.js
 import React, { useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import io from 'socket.io-client';
 import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
+import Earnings from '../components/Earnings';
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
@@ -21,7 +23,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-const geocodeAddress = address =>
+const geocodeAddress = (address) =>
   new Promise((resolve, reject) => {
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ address }, (results, status) => {
@@ -40,30 +42,32 @@ const DriverDashboard = () => {
   const [driverLocation, setDriverLocation] = useState(null);
   const [riderLocation, setRiderLocation] = useState(null);
   const [destination, setDestination] = useState(null);
+  // Retain directions state so we can draw the route on the map.
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
+  const [showEarnings, setShowEarnings] = useState(false);
 
+  // Fetch available rides on mount
   const fetchAvailableRides = () => {
     api.get('/rides/available')
-      .then(res => setAvailableRides(res.data))
-      .catch(err => console.error('Error fetching available rides:', err));
+      .then((res) => setAvailableRides(res.data))
+      .catch((err) => console.error('Error fetching available rides:', err));
   };
 
   useEffect(() => {
     fetchAvailableRides();
   }, []);
 
-  // Socket and geolocation watcher: update driver location and check for arrival.
+  // Socket and geolocation: update driver location and check for arrival
   useEffect(() => {
     const socket = io('http://localhost:5000');
     const watchId = navigator.geolocation.watchPosition(
-      pos => {
+      (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
         socket.emit('driverLocationUpdate', loc);
-  
-        // Check for arrival if there's a pickup location and an accepted ride.
+
         if (riderLocation && acceptedRide && !arrivedPingSent) {
           const distance = getDistanceFromLatLonInMeters(
             loc.lat,
@@ -80,7 +84,7 @@ const DriverDashboard = () => {
           }
         }
       },
-      err => console.error(err),
+      (err) => console.error(err),
       { enableHighAccuracy: true }
     );
     return () => {
@@ -88,54 +92,8 @@ const DriverDashboard = () => {
       socket.disconnect();
     };
   }, [riderLocation, acceptedRide, arrivedPingSent]);
-  
-  const handleAcceptRide = async rideId => {
-    try {
-      await api.post('/rides/accept', { rideId });
-      setMessage(`Ride ${rideId} accepted!`);
-      const ride = availableRides.find(r => r.id === rideId);
-      setAcceptedRide(ride);
-      setArrivedPingSent(false);
-      if (ride?.pickup_location) {
-        setRiderLocation(await geocodeAddress(ride.pickup_location));
-      }
-      if (ride?.destination) {
-        setDestination(await geocodeAddress(ride.destination));
-      }
-      fetchAvailableRides();
-    } catch (err) {
-      console.error('Error accepting ride:', err);
-      setMessage('Failed to accept ride.');
-    }
-  };
 
-  const handleStartRide = async () => {
-    if (!acceptedRide) return;
-    try {
-      const response = await api.post('/rides/start', { rideId: acceptedRide.id });
-      setMessage(response.data.message || 'Ride started successfully');
-      setRiderLocation(null);
-      // Update the acceptedRide status locally.
-      setAcceptedRide(prev => prev ? { ...prev, status: 'in_progress' } : prev);
-    } catch (error) {
-      console.error('Error starting ride:', error);
-      setMessage('Failed to start ride.');
-    }
-  };
-
-  const handleCompleteRide = async () => {
-    if (!acceptedRide) return;
-    try {
-      const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
-      setMessage(response.data.message || 'Ride completed successfully');
-      setAcceptedRide(null);
-    } catch (error) {
-      console.error('Error completing ride:', error);
-      setMessage('Failed to complete ride.');
-    }
-  };
-
-  // Client-side DirectionsService for route updates.
+  // Route Drawing: fetch and update directions every 30 seconds
   useEffect(() => {
     let intervalId;
     const fetchClientSideDirections = () => {
@@ -161,15 +119,59 @@ const DriverDashboard = () => {
         );
       }
     };
-
     fetchClientSideDirections();
     intervalId = setInterval(fetchClientSideDirections, 30000);
-
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
   }, [driverLocation, riderLocation, destination]);
 
+  const handleAcceptRide = async (rideId) => {
+    try {
+      await api.post('/rides/accept', { rideId });
+      setMessage(`Ride ${rideId} accepted!`);
+      const ride = availableRides.find((r) => r.id === rideId);
+      setAcceptedRide(ride);
+      setArrivedPingSent(false);
+      if (ride?.pickup_location) {
+        setRiderLocation(await geocodeAddress(ride.pickup_location));
+      }
+      if (ride?.destination) {
+        setDestination(await geocodeAddress(ride.destination));
+      }
+      fetchAvailableRides();
+    } catch (err) {
+      console.error('Error accepting ride:', err);
+      setMessage('Failed to accept ride.');
+    }
+  };
+
+  const handleStartRide = async () => {
+    if (!acceptedRide) return;
+    try {
+      const response = await api.post('/rides/start', { rideId: acceptedRide.id });
+      setMessage(response.data.message || 'Ride started successfully');
+      setRiderLocation(null);
+      setAcceptedRide((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
+    } catch (error) {
+      console.error('Error starting ride:', error);
+      setMessage('Failed to start ride.');
+    }
+  };
+
+  const handleCompleteRide = async () => {
+    if (!acceptedRide) return;
+    try {
+      const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
+      setMessage(response.data.message || 'Ride completed successfully');
+      setAcceptedRide(null);
+    } catch (error) {
+      console.error('Error completing ride:', error);
+      setMessage('Failed to complete ride.');
+    }
+  };
+
+  // Prepare markers for the map
   const markers = [];
   if (driverLocation) markers.push({ id: 'driver', ...driverLocation, label: 'D' });
   if (riderLocation) markers.push({ id: 'pickup', ...riderLocation, label: 'P' });
@@ -190,19 +192,19 @@ const DriverDashboard = () => {
         </div>
         <div className="ride-requests-panel">
           <h2>Available Rides</h2>
+          <button onClick={() => setShowEarnings((prev) => !prev)} style={{ marginBottom: '1rem' }}>
+            {showEarnings ? 'Hide Earnings' : 'View Earnings'}
+          </button>
+          {showEarnings && <Earnings />}
           {message && <div className="alert alert-info">{message}</div>}
-          { !acceptedRide ? (
-            <AvailableRidesList
-              rides={availableRides}
-              onAcceptRide={handleAcceptRide}
-            />
+          {!acceptedRide ? (
+            <AvailableRidesList rides={availableRides} onAcceptRide={handleAcceptRide} />
           ) : (
             <div>
               <p>Ride {acceptedRide.id} accepted.</p>
-              { acceptedRide.status !== 'in_progress' && (
+              {acceptedRide.status !== 'in_progress' ? (
                 <button onClick={handleStartRide}>Start Ride</button>
-              )}
-              { acceptedRide.status === 'in_progress' && (
+              ) : (
                 <button onClick={handleCompleteRide}>Complete Ride</button>
               )}
             </div>
