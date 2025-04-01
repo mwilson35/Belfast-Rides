@@ -43,8 +43,8 @@ router.post('/payment', authenticateToken, ridePaymentController.processPayment)
 router.post('/payment/confirm', authenticateToken, ridePaymentConfirmController.confirmPayment);
 //complete a ride 
 router.post('/complete', authenticateToken, rideCompleteController.completeRide);
-// fetch weekly earnings 
-router.get('/earnings', authenticateToken, earningsController.getWeeklyEarnings);
+// fetch earnings 
+router.get('/earnings', authenticateToken, earningsController.getEarnings);
 //ride history
 router.get('/history', authenticateToken, rideHistoryController.getRideHistory);
 //driver signup

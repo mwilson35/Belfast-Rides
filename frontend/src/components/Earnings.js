@@ -1,4 +1,3 @@
-// src/components/Earnings.js
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { getWeekStartAndEnd } from '../utils/dateUtils';
@@ -11,7 +10,6 @@ const Earnings = () => {
   const [weekRange, setWeekRange] = useState({ formattedWeekStart: '', formattedWeekEnd: '' });
 
   useEffect(() => {
-    // Get the current week's boundaries using your date utility.
     setWeekRange(getWeekStartAndEnd());
 
     const fetchCurrentEarnings = async () => {
@@ -26,7 +24,8 @@ const Earnings = () => {
 
     const fetchEarningsHistory = async () => {
       try {
-        const res = await api.get('/driver/earnings/history');
+        // Call the same endpoint with ?history=true
+        const res = await api.get('/driver/earnings?history=true');
         setHistory(res.data.history);
       } catch (error) {
         console.error("Error fetching earnings history:", error);
@@ -58,14 +57,20 @@ const Earnings = () => {
               </tr>
             </thead>
             <tbody>
-              {history.map((item, idx) => (
-                <tr key={idx}>
-                  <td>{item.weekStart}</td>
-                  <td>{item.weekEnd}</td>
-                  <td>£{parseFloat(item.totalEarnings).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
+  {history.map((item, idx) => {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const weekStart = new Date(item.week_start).toLocaleDateString("en-GB", options);
+    const weekEnd = new Date(item.week_end).toLocaleDateString("en-GB", options);
+    return (
+      <tr key={idx}>
+        <td>{weekStart}</td>
+        <td>{weekEnd}</td>
+        <td>£{parseFloat(item.total_earnings).toFixed(2)}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
           </table>
         ) : (
           <p>No earnings history available.</p>
