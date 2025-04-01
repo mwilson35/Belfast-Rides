@@ -6,8 +6,8 @@ import Navbar from '../components/Navbar';
 import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import Earnings from '../components/Earnings';
-import DocumentUpload from '../components/DocumentUpload';
 import ProfileSection from '../components/ProfileSection';
+import DriverDocumentUploads from '../components/DriverDocumentUploads'; // New component for document uploads
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
@@ -174,11 +174,10 @@ const DriverDashboard = () => {
     }
   };
 
-  // Fetch profile data on mount or when needed
+  // Fetch profile data on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Changed from '/profile' to '/users/profile' to match your routes/users.js
         const res = await api.get('/users/profile');
         setProfile(res.data);
       } catch (error) {
@@ -258,7 +257,7 @@ const DriverDashboard = () => {
           {activeTab === 'documents' && (
             <section className="documents-section">
               <h2>Your Documents</h2>
-              <DocumentUpload documentType="profilePhoto" />
+              <DriverDocumentUploads />
             </section>
           )}
           {activeTab === 'profile' && (
