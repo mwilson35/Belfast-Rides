@@ -8,6 +8,7 @@ import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import Earnings from '../components/Earnings';
 import ProfileSection from '../components/ProfileSection';
 import DriverDocumentUploads from '../components/DriverDocumentUploads'; // New component for document uploads
+import ChatBox from '../components/ChatBox'; // Import ChatBox component
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
@@ -47,7 +48,7 @@ const DriverDashboard = () => {
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  // Extended state to control the active tab: "rides", "earnings", "documents", "profile"
+  // Extended state to control the active tab: "rides", "earnings", "documents", "profile", "chat"
   const [activeTab, setActiveTab] = useState('rides');
   const [profile, setProfile] = useState(null);
 
@@ -233,6 +234,12 @@ const DriverDashboard = () => {
             >
               Profile
             </button>
+            <button 
+              className={activeTab === 'chat' ? 'active' : ''}
+              onClick={() => setActiveTab('chat')}
+            >
+              Chat
+            </button>
           </div>
           
           {/* Tab Content */}
@@ -264,6 +271,16 @@ const DriverDashboard = () => {
             <section className="profile-section">
               <h2>Your Profile</h2>
               <ProfileSection profile={profile} />
+            </section>
+          )}
+          {activeTab === 'chat' && (
+            <section className="chat-section">
+              <h2>Chat</h2>
+              {acceptedRide ? (
+                <ChatBox rideId={acceptedRide.id} role="Driver" />
+              ) : (
+                <p>No active ride available. Wait for a ride assignment to start chatting.</p>
+              )}
             </section>
           )}
         </div>

@@ -361,12 +361,19 @@ const RiderDashboard = () => {
           </section>
         )}
 
-        {activeTab === 'chat' && (
-          <section className="chat-section mt-3">
-            <h2>Chat</h2>
-            <ChatBox />
-          </section>
-        )}
+{activeTab === 'chat' && (
+  <section className="chat-section mt-3">
+    <h2>Chat</h2>
+    {activeRide ? (
+      // Use the ride id from activeRide (try rideId first, fallback to id)
+      <ChatBox rideId={activeRide.rideId || activeRide.id} role="Rider" />
+    ) : (
+      <p>No active ride available. Request or accept a ride to start chatting.</p>
+    )}
+  </section>
+)}
+
+
 
         {notification && (
           <section className="notification-section mt-3 p-2 bg-warning">

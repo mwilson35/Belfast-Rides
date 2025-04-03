@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import '../styles/ChatBox.css'; // Import custom ChatBox styles
 
-const ChatBox = () => {
+const ChatBox = ({ rideId, role }) => {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);  // Array of chat messages
   const [messageInput, setMessageInput] = useState('');
@@ -12,29 +12,36 @@ const ChatBox = () => {
     const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
 
+    // Once connected, join the room using the rideId and role
+    if (rideId) {
+      newSocket.emit('joinRoom', { rideId, role });
+    }
+
     // Listen for incoming chat messages
     newSocket.on('chatMessage', (data) => {
-      setMessages((prevMessages) => [...prevMessages, data]);
+      setMessages(prevMessages => [...prevMessages, data]);
     });
 
     // Cleanup on unmount
     return () => {
       newSocket.disconnect();
     };
-  }, []);
+  }, [rideId, role]);
 
   const sendMessage = () => {
     if (messageInput.trim() === '' || !socket) return;
     const chatData = {
-      sender: 'Rider', // or dynamically assign based on the user
+      rideId,
+      sender: role,
       message: messageInput,
       timestamp: new Date().toISOString(),
     };
-
+  
+    // Emit the message to the server; let the server's response update the state
     socket.emit('chatMessage', chatData);
-    setMessages((prevMessages) => [...prevMessages, chatData]);
     setMessageInput('');
   };
+  
 
   const handleEnterKey = (e) => {
     if (e.key === 'Enter') {

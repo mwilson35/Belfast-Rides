@@ -174,21 +174,33 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log(`New client connected: ${socket.id}`);
 
-  // Listen for driver location updates and broadcast to all clients
+  // Listen for clients joining a specific ride room
+  socket.on('joinRoom', ({ rideId, role }) => {
+    socket.join(rideId);
+    // Optionally notify the room that a new user has joined
+    socket.to(rideId).emit('chatMessage', {
+      sender: 'System',
+      message: `${role} has joined the chat.`,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Handle chat messages and emit only to the ride room
+  socket.on('chatMessage', (data) => {
+    console.log('Chat message received:', data);
+    // Ensure that the data includes the rideId to target the correct room
+    io.to(data.rideId).emit('chatMessage', data);
+  });
+
+  // Other events remain the same
   socket.on('driverLocationUpdate', (data) => {
     console.log("Driver location update:", data);
     io.emit('locationUpdate', data);
   });
 
-  // Handle driver arrival events
   socket.on('driverArrived', (data) => {
     console.log("Driver has arrived:", data);
     io.emit('driverArrived', data);
-  });
-
-  socket.on('chatMessage', (data) => {
-    console.log('Chat message received:', data);
-    io.emit('chatMessage', data);
   });
 
   socket.on('disconnect', () => {
@@ -196,7 +208,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the server on the specified PORT
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
