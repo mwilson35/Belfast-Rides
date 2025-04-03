@@ -48,7 +48,7 @@ const DriverDashboard = () => {
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  // Extended state to control the active tab: "rides", "earnings", "documents", "profile", "chat"
+  // Active tab: "rides", "earnings", "documents", "profile", "chat"
   const [activeTab, setActiveTab] = useState('rides');
   const [profile, setProfile] = useState(null);
 
@@ -273,16 +273,15 @@ const DriverDashboard = () => {
               <ProfileSection profile={profile} />
             </section>
           )}
-          {activeTab === 'chat' && (
-            <section className="chat-section">
-              <h2>Chat</h2>
-              {acceptedRide ? (
-                <ChatBox rideId={acceptedRide.id} role="Driver" />
-              ) : (
-                <p>No active ride available. Wait for a ride assignment to start chatting.</p>
-              )}
-            </section>
-          )}
+          {/* Persistently mounted ChatBox: */}
+          <div style={{ display: activeTab === 'chat' ? 'block' : 'none' }}>
+            <h2>Chat</h2>
+            {acceptedRide ? (
+              <ChatBox rideId={acceptedRide.id} role="Driver" />
+            ) : (
+              <p>No active ride available. Wait for a ride assignment to start chatting.</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

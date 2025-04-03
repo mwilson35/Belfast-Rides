@@ -44,13 +44,13 @@ const RiderDashboard = () => {
   const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
   const [activeTab, setActiveTab] = useState('rideRequest');
 
-  // Create a ref to hold the latest activeRide value.
+  // Hold the latest activeRide in a ref for socket callbacks.
   const activeRideRef = useRef(activeRide);
   useEffect(() => {
     activeRideRef.current = activeRide;
   }, [activeRide]);
 
-  // Remove persisted preview/route on mount if no active ride exists
+  // Clear persisted preview/route if no active ride exists
   useEffect(() => {
     const storedActiveRide = localStorage.getItem('activeRide');
     if (!storedActiveRide) {
@@ -67,7 +67,7 @@ const RiderDashboard = () => {
     if (storedRoute) setRoute(JSON.parse(storedRoute));
   }, []);
 
-  // Load initial data using service functions
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -113,7 +113,7 @@ const RiderDashboard = () => {
     loadData();
   }, []);
 
-  /* eslint-disable react-hooks/exhaustive-deps */
+  /* Socket and location listeners */
   useEffect(() => {
     const socket = require('socket.io-client')('http://localhost:5000');
 
@@ -183,7 +183,6 @@ const RiderDashboard = () => {
       socket.disconnect();
     };
   }, []);
-  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     let intervalId;
@@ -208,7 +207,6 @@ const RiderDashboard = () => {
     };
   }, [activeRide, driverLocation, destination]);
 
-  // Poll active ride status as a fallback for missed socket events.
   useEffect(() => {
     const pollActiveRideStatus = async () => {
       try {
@@ -222,7 +220,7 @@ const RiderDashboard = () => {
       }
     };
 
-    const intervalId = setInterval(pollActiveRideStatus, 10000); // poll every 10 seconds
+    const intervalId = setInterval(pollActiveRideStatus, 10000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -277,7 +275,7 @@ const RiderDashboard = () => {
     }
   };
 
-  // Prepare markers for MapSection if applicable
+  // Prepare map markers
   const markers = [];
   if (ridePreview && ridePreview.pickupLat && ridePreview.pickupLng) {
     markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
@@ -313,7 +311,7 @@ const RiderDashboard = () => {
           </button>
         </div>
 
-        {/* Render content based on active tab */}
+        {/* Tab content */}
         {activeTab === 'rideRequest' && (
           <>
             <RideRequest
@@ -331,11 +329,7 @@ const RiderDashboard = () => {
 
         {activeTab === 'activeRide' && (
           <>
-            <ActiveRideSection 
-              activeRide={activeRide} 
-              eta={eta} 
-              handleCancelRide={handleCancelRide} 
-            />
+            <ActiveRideSection activeRide={activeRide} eta={eta} handleCancelRide={handleCancelRide} />
             <MapSection markers={markers} route={route} />
           </>
         )}
@@ -350,9 +344,7 @@ const RiderDashboard = () => {
           />
         )}
 
-        {activeTab === 'profile' && (
-          <ProfileSection profile={profile} />
-        )}
+        {activeTab === 'profile' && <ProfileSection profile={profile} />}
 
         {activeTab === 'documents' && (
           <section className="documents-section">
@@ -361,19 +353,14 @@ const RiderDashboard = () => {
           </section>
         )}
 
-{activeTab === 'chat' && (
-  <section className="chat-section mt-3">
-    <h2>Chat</h2>
-    {activeRide ? (
-      // Use the ride id from activeRide (try rideId first, fallback to id)
-      <ChatBox rideId={activeRide.rideId || activeRide.id} role="Rider" />
-    ) : (
-      <p>No active ride available. Request or accept a ride to start chatting.</p>
-    )}
-  </section>
-)}
-
-
+        {/* Persistently mounted ChatBox, hidden when not in Chat tab */}
+        <div style={{ display: activeTab === 'chat' ? 'block' : 'none' }}>
+          {activeRide ? (
+            <ChatBox rideId={activeRide.rideId || activeRide.id} role="Rider" />
+          ) : (
+            <p>No active ride available. Request or accept a ride to start chatting.</p>
+          )}
+        </div>
 
         {notification && (
           <section className="notification-section mt-3 p-2 bg-warning">
@@ -382,9 +369,8 @@ const RiderDashboard = () => {
         )}
       </div>
 
-      {/* Ride Summary and Rating Modals */}
       {showRideSummaryModal && rideSummary && (
-        <RideSummary 
+        <RideSummary
           ride={rideSummary}
           onClose={() => setShowRideSummaryModal(false)}
           onProceedToRating={() => {
@@ -395,7 +381,7 @@ const RiderDashboard = () => {
         />
       )}
       {showRatingModal && currentRideForRating && (
-        <RatingModal 
+        <RatingModal
           rideId={currentRideForRating.id}
           rateeId={currentRideForRating.driver_id}
           onClose={() => setShowRatingModal(false)}
