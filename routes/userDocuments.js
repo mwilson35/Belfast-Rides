@@ -19,22 +19,49 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 router.post('/uploadDocument', authenticateToken, upload.single('document'), (req, res) => {
-  const userId = req.user.id; // This works for both riders and drivers.
+  const userId = req.user.id; // Works for both riders and drivers.
   const documentType = req.body.documentType || req.query.documentType;
   
+  // Ensure documentType is provided.
   if (!documentType) {
     return res.status(400).json({ message: "documentType is required" });
   }
   
+  // Ensure a file is uploaded.
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
   
-  // Normalize the file path (convert backslashes to forward slashes)
-  const filePath = req.file.path.replace(/\\/g, '/');
-  console.log("File uploaded for user", userId, "with documentType:", documentType, "and filePath:", filePath);
+  // Allowed front-end types.
+  const allowedTypes = ['driversLicense', 'insuranceDocument', 'taxiDocument', 'profilePhoto'];
+  if (!allowedTypes.includes(documentType)) {
+    return res.status(400).json({ message: "Invalid documentType provided" });
+  }
   
-  // If this is a profile photo, update the user's profile and insert the metadata.
+  // Normalize the file path.
+  const filePath = req.file.path.replace(/\\/g, '/');
+  console.log(`User ${userId} uploaded file ${filePath} with type ${documentType}`);
+  
+  // Map incoming documentType to database values.
+  let dbDocumentType;
+  switch (documentType) {
+    case 'driversLicense':
+      dbDocumentType = 'license';
+      break;
+    case 'insuranceDocument':
+      dbDocumentType = 'insurance';
+      break;
+    case 'taxiDocument':
+      dbDocumentType = 'taxiDocument';
+      break;
+    case 'profilePhoto':
+      dbDocumentType = 'profilePhoto';
+      break;
+    default:
+      dbDocumentType = '';
+  }
+  
+  // If this is a profile photo, update the user's profilePicUrl.
   if (documentType === 'profilePhoto') {
     console.log("Updating profilePicUrl for user:", userId, "with filePath:", filePath);
     db.query(
@@ -46,10 +73,10 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
           return res.status(500).json({ message: "Error updating user profile" });
         }
         console.log("User profile updated:", updateResult);
-        // Now insert the metadata record.
+        // Insert the document metadata.
         db.query(
           "INSERT INTO user_documents (user_id, document_type, file_path, status) VALUES (?, ?, ?, ?)",
-          [userId, documentType, filePath, 'pending'],
+          [userId, dbDocumentType, filePath, 'pending'],
           (err, result) => {
             if (err) {
               console.error("Error saving document metadata:", err);
@@ -59,7 +86,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
               message: "Profile photo uploaded and profile updated successfully",
               documentId: result.insertId,
               file: req.file,
-              documentType: documentType,
+              documentType: dbDocumentType,
               profilePicUrl: filePath,
             });
           }
@@ -67,10 +94,10 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
       }
     );
   } else {
-    // For other document types, just insert the metadata.
+    // For other document types, insert the document metadata.
     db.query(
       "INSERT INTO user_documents (user_id, document_type, file_path, status) VALUES (?, ?, ?, ?)",
-      [userId, documentType, filePath, 'pending'],
+      [userId, dbDocumentType, filePath, 'pending'],
       (err, result) => {
         if (err) {
           console.error("Error saving document metadata:", err);
@@ -80,7 +107,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
           message: "Document uploaded and metadata stored successfully",
           documentId: result.insertId,
           file: req.file,
-          documentType: documentType
+          documentType: dbDocumentType,
         });
       }
     );
