@@ -241,10 +241,11 @@ const RiderDashboard = () => {
 
   const handleRequestRide = async () => {
     try {
-      const response = await api.post('/rides/request', { pickupLocation, destination, encodedPolyline: ridePreview.encodedPolyline });
-      setNotification(`Ride requested successfully! Ride ID: ${response.data.rideId || response.data.id}`);
+      const response = await api.post('/rides/request', { pickupLocation, destination });
+      setNotification(`Ride requested! ID: ${response.data.rideId}`);
       setRidePreview(null);
-      setActiveRide({ ...response.data, status: response.data.status || 'requested' });
+      setActiveRide({ ...response.data, status: 'requested' });
+      setRoute(response.data.encodedPolyline);
       const historyData = await fetchRideHistory();
       setRideHistory(historyData);
     } catch (error) {
@@ -252,6 +253,7 @@ const RiderDashboard = () => {
       setNotification('Failed to request ride.');
     }
   };
+  
 
   const handleCancelRide = async () => {
     const confirmCancel = window.confirm("Are you sure you want to cancel this ride? A cancellation fee may apply.");

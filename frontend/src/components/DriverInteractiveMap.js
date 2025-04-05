@@ -1,41 +1,100 @@
-import React from 'react';
-import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import React, { useEffect, useRef } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-const DriverInteractiveMap = ({ markers = [], directions = null, center, zoom: mapZoom = 12, autoFit = false }) => {
-  const defaultCenter = center || (markers.length > 0 ? { lat: markers[0].lat, lng: markers[0].lng } : { lat: 54.5973, lng: -5.9301 });
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-  const handleMapLoad = (map) => {
-    if (autoFit && directions) {
-      const bounds = new window.google.maps.LatLngBounds();
-      const legs = directions.routes[0]?.legs || [];
-      legs.forEach((leg) => {
-        bounds.extend(leg.start_location);
-        bounds.extend(leg.end_location);
-      });
-      map.fitBounds(bounds);
-    } else if (autoFit && markers.length > 0) {
-      const bounds = new window.google.maps.LatLngBounds();
-      markers.forEach((marker) => {
-        bounds.extend(new window.google.maps.LatLng(marker.lat, marker.lng));
-      });
-      map.fitBounds(bounds);
+const DriverInteractiveMap = ({
+  markers = [],
+  directions = null, // expecting GeoJSON format
+  center,
+  zoom = 12,
+  autoFit = false,
+}) => {
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
+
+  useEffect(() => {
+    // Initialize Map
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/navigation-day-v1',
+      center: center ? [center.lng, center.lat] : [-5.9301, 54.5973],
+      zoom,
+      pitch: 60,
+      bearing: 0,
+      antialias: true,
+    });
+
+    // Cleanup map on unmount
+    return () => mapRef.current.remove();
+  }, []);
+
+  // Render Markers
+  useEffect(() => {
+    // Clear previous markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    markers.forEach(markerData => {
+      const marker = new mapboxgl.Marker({ color: markerData.color || 'red' })
+        .setLngLat([markerData.lng, markerData.lat])
+        .setPopup(new mapboxgl.Popup().setText(markerData.label || ''))
+        .addTo(mapRef.current);
+      markersRef.current.push(marker);
+    });
+  }, [markers]);
+
+  // Render Directions (GeoJSON format expected)
+  useEffect(() => {
+    if (!directions || !mapRef.current) return;
+
+    // Remove previous route if exists
+    if (mapRef.current.getSource('route')) {
+      mapRef.current.removeLayer('route');
+      mapRef.current.removeSource('route');
     }
-  };
+
+    mapRef.current.addSource('route', {
+      type: 'geojson',
+      data: directions,
+    });
+
+    mapRef.current.addLayer({
+      id: 'route',
+      type: 'line',
+      source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#1db7dd', 'line-width': 5 },
+    });
+  }, [directions]);
+
+  // Auto-fit bounds
+  useEffect(() => {
+    if (!autoFit || !mapRef.current) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+
+    if (directions && directions.features) {
+      directions.features.forEach(feature => {
+        feature.geometry.coordinates.forEach(coord => bounds.extend(coord));
+      });
+    } else if (markers.length > 0) {
+      markers.forEach(marker => bounds.extend([marker.lng, marker.lat]));
+    }
+
+    if (!bounds.isEmpty()) {
+      mapRef.current.fitBounds(bounds, { padding: 50 });
+    }
+  }, [markers, directions, autoFit]);
 
   return (
-    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-      <GoogleMap
-        mapContainerClassName="interactive-map-container"
-        center={defaultCenter}
-        zoom={mapZoom}
-        onLoad={handleMapLoad}
-      >
-        {markers.map((marker, index) => (
-          <Marker key={marker.id || index} position={{ lat: marker.lat, lng: marker.lng }} label={marker.label || ''} />
-        ))}
-        {directions && <DirectionsRenderer directions={directions} />}
-      </GoogleMap>
-    </LoadScript>
+    <div
+      ref={mapContainerRef}
+      className="interactive-map-container"
+      style={{ width: '100%', height: '600px', borderRadius: '12px' }}
+    />
   );
 };
 
