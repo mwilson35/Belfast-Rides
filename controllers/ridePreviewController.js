@@ -2,65 +2,82 @@ const axios = require('axios');
 
 exports.previewRide = async (req, res) => {
   const { pickupLocation, destination } = req.body;
-  
+
   if (!pickupLocation || !destination) {
     return res.status(400).json({ message: 'Pickup and destination locations are required.' });
   }
-  
+
+  const mapboxToken = process.env.MAPBOX_TOKEN;
+
   try {
     console.log(`Previewing ride from ${pickupLocation} to ${destination}`);
 
-    // 1. Call the Distance Matrix API to calculate distance, duration, and estimated fare.
-    const distanceResponse = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+    // 1. Geocode pickup location
+    const pickupGeo = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickupLocation)}.json`, {
+      params: { access_token: mapboxToken }
+    });
+
+    // 2. Geocode destination
+    const destinationGeo = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destination)}.json`, {
+      params: { access_token: mapboxToken }
+    });
+
+    if (!pickupGeo.data.features.length || !destinationGeo.data.features.length) {
+      return res.status(400).json({ message: 'Unable to find location coordinates. Check addresses.' });
+    }
+
+    const [pickupLng, pickupLat] = pickupGeo.data.features[0].center;
+    const [destLng, destLat] = destinationGeo.data.features[0].center;
+
+    // 3. Get directions from Mapbox
+    const directionsResponse = await axios.get(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickupLng},${pickupLat};${destLng},${destLat}`, {
       params: {
-        origins: pickupLocation,
-        destinations: destination,
-        key: process.env.GOOGLE_MAPS_API_KEY,
-        mode: 'driving'
+        access_token: mapboxToken,
+        geometries: 'geojson'
       }
     });
-    
-    const distanceData = distanceResponse.data;
-    console.log('Distance Matrix API response:', JSON.stringify(distanceData, null, 2));
-    
-    const elementStatus = distanceData.rows[0]?.elements[0]?.status;
-    if (elementStatus !== 'OK') {
-      const errorMessage = distanceData.error_message || `Status from API: ${elementStatus}`;
-      return res.status(400).json({ message: errorMessage || 'Unable to calculate distance and duration.' });
+
+    const directionsData = directionsResponse.data;
+
+    if (!directionsData.routes || !directionsData.routes.length) {
+      return res.status(400).json({ message: 'No valid route found with Mapbox.' });
     }
-    
-    const distance = distanceData.rows[0].elements[0].distance.value / 1000;
-    const duration = distanceData.rows[0].elements[0].duration.text;
+
+    const route = directionsData.routes[0];
+    const distanceInMeters = route.distance;
+    const durationInSeconds = route.duration;
+    const distanceInKm = distanceInMeters / 1000;
+
     const baseFare = 2.5;
     const farePerKm = 1.2;
-    const estimatedFare = (baseFare + distance * farePerKm).toFixed(2);
+    const estimatedFare = baseFare + distanceInKm * farePerKm;
 
-    // 2. Call the Directions API to get the route details (extracting the encoded polyline).
-    const directionsResponse = await axios.get('https://maps.googleapis.com/maps/api/directions/json', {
-      params: {
-        origin: pickupLocation,
-        destination: destination,
-        key: process.env.GOOGLE_MAPS_API_KEY,
-      },
-    });
-    
-    let encodedPolyline = null;
-    if (directionsResponse.data.routes && directionsResponse.data.routes.length > 0) {
-      const route = directionsResponse.data.routes[0];
-      encodedPolyline = route.overview_polyline.points;
-    }
-    
-    // 3. Return all preview data including the polyline.
-    res.json({
+    // Format route as GeoJSON FeatureCollection
+    const geojsonRoute = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: route.geometry,
+          properties: {}
+        }
+      ]
+    };
+
+    res.status(200).json({
       pickupLocation,
       destination,
-      distance: `${distance.toFixed(2)} km`,
-      duration,
-      estimatedFare: `£${estimatedFare}`,
-      encodedPolyline
+      distance: `${distanceInKm.toFixed(2)} km`,
+      duration: `${Math.round(durationInSeconds / 60)} mins`,
+      estimatedFare: `£${estimatedFare.toFixed(2)}`,
+      encodedPolyline: geojsonRoute,
+      pickupLat,
+      pickupLng,
+      destinationLat: destLat,
+      destinationLng: destLng
     });
   } catch (error) {
-    console.error('Error during ride preview:', error.response?.data || error.message);
-    res.status(500).json({ message: 'Failed to preview ride.' });
+    console.error('Error during Mapbox preview:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to preview ride with Mapbox.' });
   }
 };
