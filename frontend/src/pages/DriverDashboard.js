@@ -26,18 +26,15 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-const geocodeAddress = (address) =>
-  new Promise((resolve, reject) => {
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        const { lat, lng } = results[0].geometry.location;
-        resolve({ lat: lat(), lng: lng() });
-      } else {
-        reject(`Geocode failed: ${status}`);
-      }
-    });
-  });
+const geocodeAddress = async (address) => {
+  const token = process.env.REACT_APP_MAPBOX_TOKEN;
+  const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}`);
+  const data = await response.json();
+  if (!data.features || !data.features.length) throw new Error('No geocoding results');
+  const [lng, lat] = data.features[0].center;
+  return { lat, lng };
+};
+
 
 const DriverDashboard = () => {
   const [availableRides, setAvailableRides] = useState([]);
@@ -100,29 +97,29 @@ const DriverDashboard = () => {
   // Route Drawing: fetch and update directions every 30 seconds
   useEffect(() => {
     let intervalId;
-    const fetchClientSideDirections = () => {
-      if (driverLocation && (riderLocation || destination)) {
-        const directionsService = new window.google.maps.DirectionsService();
-        const origin = new window.google.maps.LatLng(driverLocation.lat, driverLocation.lng);
-        const target = riderLocation
-          ? new window.google.maps.LatLng(riderLocation.lat, riderLocation.lng)
-          : new window.google.maps.LatLng(destination.lat, destination.lng);
-        directionsService.route(
-          {
-            origin: origin,
-            destination: target,
-            travelMode: window.google.maps.TravelMode.DRIVING,
-          },
-          (result, status) => {
-            if (status === window.google.maps.DirectionsStatus.OK || status === 'OK') {
-              setDirections(result);
-            } else {
-              console.error('Error fetching directions:', result);
-            }
-          }
-        );
+    const fetchClientSideDirections = async () => {
+      if (!driverLocation || (!riderLocation && !destination)) return;
+    
+      const origin = riderLocation || destination;
+      const token = process.env.REACT_APP_MAPBOX_TOKEN;
+    
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${origin.lng},${origin.lat}?access_token=${token}&geometries=geojson`;
+    
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+    
+        if (data.routes && data.routes.length) {
+          const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
+          setDirections(coords);
+        } else {
+          console.warn('No directions found.');
+        }
+      } catch (err) {
+        console.error('Mapbox directions error:', err);
       }
     };
+    
     fetchClientSideDirections();
     intervalId = setInterval(fetchClientSideDirections, 30000);
     return () => {
@@ -132,23 +129,33 @@ const DriverDashboard = () => {
 
   const handleAcceptRide = async (rideId) => {
     try {
-      await api.post('/rides/accept', { rideId });
-      setMessage(`Ride ${rideId} accepted!`);
+      const res = await api.post('/rides/accept', { rideId });
+      
+      if (res.status === 200 && res.data.message) {
+        setMessage(res.data.message); 
+      } else {
+        setMessage('Unexpected response from server.');
+        console.warn('Unexpected ride accept response:', res);
+      }
+  
       const ride = availableRides.find((r) => r.id === rideId);
       setAcceptedRide(ride);
       setArrivedPingSent(false);
+  
       if (ride?.pickup_location) {
         setRiderLocation(await geocodeAddress(ride.pickup_location));
       }
       if (ride?.destination) {
         setDestination(await geocodeAddress(ride.destination));
       }
+  
       fetchAvailableRides();
     } catch (err) {
-      console.error('Error accepting ride:', err);
+      console.error('Error accepting ride:', err?.response?.data || err.message || err);
       setMessage('Failed to accept ride.');
     }
   };
+  
 
   const handleStartRide = async () => {
     if (!acceptedRide) return;
