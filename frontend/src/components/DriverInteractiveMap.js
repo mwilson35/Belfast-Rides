@@ -10,6 +10,7 @@ const DriverInteractiveMap = ({
   center,
   zoom = 12,
   autoFit = false,
+  acceptedRide, // pass acceptedRide from parent if available
 }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -29,7 +30,7 @@ const DriverInteractiveMap = ({
 
     // Cleanup map on unmount
     return () => mapRef.current.remove();
-  }, []);
+  }, [center, zoom]);
 
   // Render Markers
   useEffect(() => {
@@ -50,7 +51,6 @@ const DriverInteractiveMap = ({
   useEffect(() => {
     if (!directions || !mapRef.current) return;
 
-    // Remove previous route if exists
     if (mapRef.current.getSource('route')) {
       mapRef.current.removeLayer('route');
       mapRef.current.removeSource('route');
@@ -88,6 +88,21 @@ const DriverInteractiveMap = ({
       mapRef.current.fitBounds(bounds, { padding: 50 });
     }
   }, [markers, directions, autoFit]);
+
+  // Dynamic driving camera update: push driver to bottom and show route
+  useEffect(() => {
+    if (!mapRef.current || !center || !acceptedRide) return;
+    const dynamicBearing = 45; // Adjust if needed
+    mapRef.current.easeTo({
+      center: [center.lng, center.lat],
+      bearing: dynamicBearing,
+      pitch: 60,
+      zoom: 18,       // Increased zoom for a closer view
+      offset: [0, 100], // You can tweak this too
+      duration: 1000
+    });
+  }, [center, acceptedRide]);
+  
 
   return (
     <div

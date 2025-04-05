@@ -97,35 +97,45 @@ const DriverDashboard = () => {
   // Route Drawing: fetch and update directions every 30 seconds
   useEffect(() => {
     let intervalId;
-    const fetchClientSideDirections = async () => {
-      if (!driverLocation || (!riderLocation && !destination)) return;
-    
-      const origin = riderLocation || destination;
+    const fetchDirections = async () => {
+      if (!driverLocation) return;
       const token = process.env.REACT_APP_MAPBOX_TOKEN;
-    
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${origin.lng},${origin.lat}?access_token=${token}&geometries=geojson`;
-    
+      let url;
+      // If ride has started, show driver -> destination route
+      if (acceptedRide && acceptedRide.status === 'in_progress' && destination) {
+        url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${destination.lng},${destination.lat}?access_token=${token}&geometries=geojson`;
+      }
+      // Otherwise, show driver -> pickup -> destination route
+      else if (driverLocation && riderLocation && destination) {
+        url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${riderLocation.lng},${riderLocation.lat};${destination.lng},${destination.lat}?access_token=${token}&geometries=geojson`;
+      } else {
+        return;
+      }
       try {
         const response = await fetch(url);
         const data = await response.json();
-    
         if (data.routes && data.routes.length) {
-          const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
-          setDirections(coords);
+          const geometry = data.routes[0].geometry;
+          const geojsonRoute =
+            geometry.type === 'LineString'
+              ? { type: 'Feature', geometry, properties: {} }
+              : geometry;
+          setDirections(geojsonRoute);
         } else {
           console.warn('No directions found.');
         }
       } catch (err) {
-        console.error('Mapbox directions error:', err);
+        console.error('Error fetching directions:', err);
       }
     };
+    fetchDirections();
+    intervalId = setInterval(fetchDirections, 30000);
+    return () => clearInterval(intervalId);
+  }, [driverLocation, riderLocation, destination, acceptedRide]);
+  
+  
     
-    fetchClientSideDirections();
-    intervalId = setInterval(fetchClientSideDirections, 30000);
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [driverLocation, riderLocation, destination]);
+
 
   const handleAcceptRide = async (rideId) => {
     try {
@@ -206,13 +216,16 @@ const DriverDashboard = () => {
       <Navbar />
       <div className="driver-dashboard-content">
         <div className="map-section">
-          <DriverInteractiveMap
-            markers={markers}
-            center={driverLocation}
-            zoom={16}
-            autoFit={true}
-            directions={directions}
-          />
+        <DriverInteractiveMap
+  markers={markers}
+  center={driverLocation}
+  zoom={16}
+  autoFit={acceptedRide ? false : true} // disable auto-fit when a ride is accepted
+  directions={directions}
+  acceptedRide={acceptedRide}
+/>
+
+
         </div>
         <div className="ride-requests-panel">
           {/* Tab Header */}
