@@ -1,0 +1,73 @@
+/* Earnings.css */
+.earnings {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: #333;
+    max-width: 800px;
+    margin: 1rem auto;
+  }
+  
+  .earnings h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .current-earnings {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .current-earnings h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .current-earnings p {
+    font-size: 1rem;
+    margin: 0.25rem 0;
+  }
+  
+  .earnings-history h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+  }
+  
+  .earnings-history table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .earnings-history th,
+  .earnings-history td {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .earnings-history th {
+    background: #f4f4f4;
+    font-weight: bold;
+  }
+  
+  .earnings-history tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+  
+  .earnings-history tr:hover {
+    background: #f1f1f1;
+  }
+  
+  @media (max-width: 600px) {
+    .earnings {
+      padding: 1rem;
+    }
+    .earnings-history th,
+    .earnings-history td {
+      padding: 0.5rem;
+    }
+  }
+  

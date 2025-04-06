@@ -1,52 +1,125 @@
-/* Ensure the dashboard fills the screen */
+/* Driver Dashboard Container */
 .driver-dashboard {
-  height: 100vh;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f4f6f8, #e9ecef);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+}
+
+/* Layout for dashboard content: map and side panel */
+.driver-dashboard-content {
+  display: flex;
+  height: calc(100vh - 60px); /* Adjust if Navbar height changes */
+}
+
+/* Map Section styling */
+.map-section {
+  flex: 1;
+  background-color: #f0f2f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   overflow: hidden;
 }
 
-/* Layout for the dashboard content: full-screen map with a side panel */
-.driver-dashboard-content {
-  display: flex;
-  height: calc(100vh - 56px); /* Adjust if your Navbar height differs */
+/* Ensure the map container fills its parent */
+.interactive-map-container {
+  width: 100%;
+  height: 100%;
 }
 
-/* The map section should flex to fill available space */
-.map-section {
-  flex: 1;
-}
-
-/* Side panel for available rides */
+/* Side panel for ride requests, earnings, etc. */
 .ride-requests-panel {
-  width: 300px; /* Fixed width for desktop view */
+  width: 320px;
   background: #fff;
   overflow-y: auto;
-  padding: 1rem;
-  border-left: 1px solid #ccc;
+  padding: 1.5rem;
+  border-left: 1px solid #e0e0e0;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Ensure the Google Map container fills its parent */
-.interactive-map-container {
-  height: 100%;
-  width: 100%;
+/* Tabs for switching content in side panel */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Tabs Styling for Side Panel */
+.tabs button {
+  background: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  color: #333;
+  transition: background-color 0.3s, color 0.3s;
+  cursor: pointer;
+}
+
+.tabs button.active,
+.tabs button:hover {
+  background: #007bff;
+  color: #fff;
+}
+
+/* General Button Styling */
+button {
+  background: #007bff;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+
+/* Notification Alert Styling */
+.alert {
+  background: #fff3cd;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #ffeeba;
+  color: #856404;
+}
+
+/* Button Styling */
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background: #0056b3;
 }
 
 /* Mobile Adjustments */
 @media (max-width: 768px) {
-  /* Stack panels vertically */
   .driver-dashboard-content {
     flex-direction: column;
   }
   
-  /* Set map height similar to the rider dashboard */
   .map-section {
-    height: 80vh;
+    height: 70vh;
   }
   
-  /* Full width for the side panel and adjust borders */
   .ride-requests-panel {
     width: 100%;
     border-left: none;
-    border-top: 1px solid #ccc;
-    padding: 0.5rem;
+    border-top: 1px solid #e0e0e0;
+    padding: 1rem;
   }
 }
