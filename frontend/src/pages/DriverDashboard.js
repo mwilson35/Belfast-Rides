@@ -271,10 +271,21 @@ const DriverDashboard = () => {
               <div>
                 <p>Ride {acceptedRide.id} accepted.</p>
                 {acceptedRide.status !== 'in_progress' ? (
-                  <button onClick={handleStartRide}>Start Ride</button>
-                ) : (
-                  <button onClick={handleCompleteRide}>Complete Ride</button>
-                )}
+  driverLocation && riderLocation &&
+  getDistanceFromLatLonInMeters(
+    driverLocation.lat,
+    driverLocation.lng,
+    riderLocation.lat,
+    riderLocation.lng
+  ) < 55 ? (
+    <button onClick={handleStartRide}>Start Ride</button>
+  ) : (
+    <p>Move closer to pickup location</p>
+  )
+) : (
+  <button onClick={handleCompleteRide}>Complete Ride</button>
+)}
+
               </div>
             )
           )}
