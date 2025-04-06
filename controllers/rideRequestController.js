@@ -58,45 +58,58 @@ exports.requestRide = async (req, res) => {
         }
       ]
     };
-
     db.query(
-      `INSERT INTO rides 
-        (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status, encoded_polyline, pickup_lat, pickup_lng, destination_lat, destination_lng) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        pickupLocation,
-        destination,
-        riderId,
-        distanceInKm,
-        estimatedFare,
-        'requested',
-        'pending',
-        JSON.stringify(geojsonRoute),
-        pickupLat,
-        pickupLng,
-        destLat,
-        destLng
-      ],
-      (err, results) => {
+      "SELECT * FROM rides WHERE rider_id = ? AND status IN ('requested', 'accepted')",
+      [riderId],
+      (err, activeRides) => {
         if (err) {
-          console.error('Database error:', err.message);
+          console.error("DB error checking active rides:", err.message);
           return res.status(500).json({ message: 'Database error' });
         }
-
-        res.status(201).json({
-          message: 'Ride requested successfully',
-          rideId: results.insertId,
-          distance: `${distanceInKm.toFixed(2)} km`,
-          duration: `${Math.round(durationInSeconds / 60)} mins`,
-          estimatedFare: `£${estimatedFare.toFixed(2)}`,
-          encodedPolyline: geojsonRoute,
-          pickupLat,
-          pickupLng,
-          destinationLat: destLat,
-          destinationLng: destLng
-        });
-      }
-    );
+        if (activeRides.length > 0) {
+          return res.status(400).json({ message: 'You already have an active ride.' });
+        }
+        
+        db.query(
+          `INSERT INTO rides 
+            (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status, encoded_polyline, pickup_lat, pickup_lng, destination_lat, destination_lng) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            pickupLocation,
+            destination,
+            riderId,
+            distanceInKm,
+            estimatedFare,
+            'requested',
+            'pending',
+            JSON.stringify(geojsonRoute),
+            pickupLat,
+            pickupLng,
+            destLat,
+            destLng
+          ],
+          (err, results) => {
+            if (err) {
+              console.error('Database error:', err.message);
+              return res.status(500).json({ message: 'Database error' });
+            }
+            res.status(201).json({
+              message: 'Ride requested successfully',
+              rideId: results.insertId,
+              distance: `${distanceInKm.toFixed(2)} km`,
+              duration: `${Math.round(durationInSeconds / 60)} mins`,
+              estimatedFare: `£${estimatedFare.toFixed(2)}`,
+              encodedPolyline: geojsonRoute,
+              pickupLat,
+              pickupLng,
+              destinationLat: destLat,
+              destinationLng: destLng
+            });
+          }
+        );
+      } // <-- This closes the SELECT callback
+    ); // <-- This closes the SELECT query call
+    
   } catch (error) {
     console.error('Full error stack:', error);
     res.status(500).json({ message: 'Error calculating ride route.' });
