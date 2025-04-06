@@ -20,7 +20,7 @@ const DriverInteractiveMap = ({
     // Initialize Map
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/navigation-day-v1',
+      style: 'mapbox://styles/mapbox/streets-v11',
       center: center ? [center.lng, center.lat] : [-5.9301, 54.5973],
       zoom,
       pitch: 60,
