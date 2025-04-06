@@ -255,9 +255,13 @@ const RiderDashboard = () => {
       const response = await api.post('/rides/cancel', { rideId: activeRide.rideId || activeRide.id });
       setNotification(`Ride canceled. Fee: £${response.data.cancellationFee || 0}`);
       setActiveRide(null);
-      localStorage.clear();
+      // Remove only ride-specific keys, not the auth token.
+      localStorage.removeItem('ridePreview');
+      localStorage.removeItem('route');
+      localStorage.removeItem('activeRide');
       setRidePreview(null);
       setRoute(null);
+      // Optionally, clear driver location if needed:
       setDriverLocation(null);
       const historyData = await fetchRideHistory();
       setRideHistory(historyData);
@@ -266,6 +270,8 @@ const RiderDashboard = () => {
       setNotification('Failed to cancel ride.');
     }
   };
+  
+  
 
   const markers = [];
   if (ridePreview?.pickupLat && ridePreview?.pickupLng) {
