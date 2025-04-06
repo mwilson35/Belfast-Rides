@@ -92,13 +92,13 @@ const DriverInteractiveMap = ({
   // Dynamic driving camera update: push driver to bottom and show route
   useEffect(() => {
     if (!mapRef.current || !center || !acceptedRide) return;
-    const dynamicBearing = 45; // Adjust if needed
+    const dynamicBearing = 45; 
     mapRef.current.easeTo({
       center: [center.lng, center.lat],
       bearing: dynamicBearing,
       pitch: 60,
-      zoom: 18,       // Increased zoom for a closer view
-      offset: [0, 100], // You can tweak this too
+      zoom: 18,       
+      offset: [0, 100], 
       duration: 1000
     });
   }, [center, acceptedRide]);
@@ -108,9 +108,10 @@ const DriverInteractiveMap = ({
     <div
       ref={mapContainerRef}
       className="interactive-map-container"
-      style={{ width: '100%', height: '600px', borderRadius: '12px' }}
+      style={{ borderRadius: '12px' }}
     />
   );
+  
 };
 
 export default DriverInteractiveMap;
