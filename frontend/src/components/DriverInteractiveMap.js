@@ -50,25 +50,32 @@ const DriverInteractiveMap = ({
   // Render Directions (GeoJSON format expected)
   useEffect(() => {
     if (!directions || !mapRef.current) return;
-
-    if (mapRef.current.getSource('route')) {
-      mapRef.current.removeLayer('route');
-      mapRef.current.removeSource('route');
+  
+    const addRouteLayer = () => {
+      if (mapRef.current.getSource('route')) {
+        mapRef.current.removeLayer('route');
+        mapRef.current.removeSource('route');
+      }
+      mapRef.current.addSource('route', {
+        type: 'geojson',
+        data: directions,
+      });
+      mapRef.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#1db7dd', 'line-width': 5 },
+      });
+    };
+  
+    if (!mapRef.current.isStyleLoaded()) {
+      mapRef.current.once('load', addRouteLayer);
+    } else {
+      addRouteLayer();
     }
-
-    mapRef.current.addSource('route', {
-      type: 'geojson',
-      data: directions,
-    });
-
-    mapRef.current.addLayer({
-      id: 'route',
-      type: 'line',
-      source: 'route',
-      layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#1db7dd', 'line-width': 5 },
-    });
   }, [directions]);
+  
 
   // Auto-fit bounds
   useEffect(() => {

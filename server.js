@@ -202,7 +202,11 @@ io.on('connection', (socket) => {
     console.log("Driver has arrived:", data);
     io.emit('driverArrived', data);
   });
-
+  socket.on('rideCancelled', (data) => {
+    console.log('rideCancelled event from driver:', data);
+    io.emit('rideCancelled', data);
+  });
+  
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
   });

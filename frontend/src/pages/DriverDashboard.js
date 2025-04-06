@@ -1,5 +1,4 @@
-// src/pages/DriverDashboard.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
@@ -7,13 +6,13 @@ import AvailableRidesList from '../components/AvailableRidesList';
 import DriverInteractiveMap from '../components/DriverInteractiveMap';
 import Earnings from '../components/Earnings';
 import ProfileSection from '../components/ProfileSection';
-import DriverDocumentUploads from '../components/DriverDocumentUploads'; // New component for document uploads
-import ChatBox from '../components/ChatBox'; // Import ChatBox component
+import DriverDocumentUploads from '../components/DriverDocumentUploads';
+import ChatBox from '../components/ChatBox';
 import '../styles/DriverDashboard.css';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // Earth's radius in meters
+  const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -28,13 +27,14 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 
 const geocodeAddress = async (address) => {
   const token = process.env.REACT_APP_MAPBOX_TOKEN;
-  const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}`);
+  const response = await fetch(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}`
+  );
   const data = await response.json();
   if (!data.features || !data.features.length) throw new Error('No geocoding results');
   const [lng, lat] = data.features[0].center;
   return { lat, lng };
 };
-
 
 const DriverDashboard = () => {
   const [availableRides, setAvailableRides] = useState([]);
@@ -45,9 +45,11 @@ const DriverDashboard = () => {
   const [directions, setDirections] = useState(null);
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
-  // Active tab: "rides", "earnings", "documents", "profile", "chat"
   const [activeTab, setActiveTab] = useState('rides');
   const [profile, setProfile] = useState(null);
+
+  // NEW: Declare socketRef to store the socket instance
+  const socketRef = useRef(null);
 
   // Fetch available rides on mount
   const fetchAvailableRides = () => {
@@ -62,12 +64,12 @@ const DriverDashboard = () => {
 
   // Socket and geolocation: update driver location and check for arrival
   useEffect(() => {
-    const socket = io('http://localhost:5000');
+    socketRef.current = io('http://localhost:5000');
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
-        socket.emit('driverLocationUpdate', loc);
+        socketRef.current.emit('driverLocationUpdate', loc);
 
         if (riderLocation && acceptedRide && !arrivedPingSent) {
           const distance = getDistanceFromLatLonInMeters(
@@ -79,7 +81,7 @@ const DriverDashboard = () => {
           console.log('Distance to pickup:', distance);
           if (distance < 55) {
             setTimeout(() => {
-              socket.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
+              socketRef.current.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
               setArrivedPingSent(true);
             }, 2000);
           }
@@ -90,7 +92,7 @@ const DriverDashboard = () => {
     );
     return () => {
       navigator.geolocation.clearWatch(watchId);
-      socket.disconnect();
+      socketRef.current.disconnect();
     };
   }, [riderLocation, acceptedRide, arrivedPingSent]);
 
@@ -132,40 +134,31 @@ const DriverDashboard = () => {
     intervalId = setInterval(fetchDirections, 30000);
     return () => clearInterval(intervalId);
   }, [driverLocation, riderLocation, destination, acceptedRide]);
-  
-  
-    
-
 
   const handleAcceptRide = async (rideId) => {
     try {
       const res = await api.post('/rides/accept', { rideId });
-      
       if (res.status === 200 && res.data.message) {
-        setMessage(res.data.message); 
+        setMessage(res.data.message);
       } else {
         setMessage('Unexpected response from server.');
         console.warn('Unexpected ride accept response:', res);
       }
-  
       const ride = availableRides.find((r) => r.id === rideId);
       setAcceptedRide(ride);
       setArrivedPingSent(false);
-  
       if (ride?.pickup_location) {
         setRiderLocation(await geocodeAddress(ride.pickup_location));
       }
       if (ride?.destination) {
         setDestination(await geocodeAddress(ride.destination));
       }
-  
       fetchAvailableRides();
     } catch (err) {
       console.error('Error accepting ride:', err?.response?.data || err.message || err);
       setMessage('Failed to accept ride.');
     }
   };
-  
 
   const handleStartRide = async () => {
     if (!acceptedRide) return;
@@ -189,6 +182,19 @@ const DriverDashboard = () => {
     } catch (error) {
       console.error('Error completing ride:', error);
       setMessage('Failed to complete ride.');
+    }
+  };
+
+  const handleCancelRide = async () => {
+    try {
+      const response = await api.post('/rides/cancel', { rideId: acceptedRide.id });
+      setMessage(response.data.message || 'Ride cancelled successfully');
+      // Emit event to notify rider of cancellation
+      socketRef.current.emit('rideCancelled', { rideId: acceptedRide.id });
+      setAcceptedRide(null);
+    } catch (error) {
+      console.error('Error cancelling ride:', error);
+      setMessage('Failed to cancel ride.');
     }
   };
 
@@ -216,16 +222,14 @@ const DriverDashboard = () => {
       <Navbar />
       <div className="driver-dashboard-content">
         <div className="map-section">
-        <DriverInteractiveMap
-  markers={markers}
-  center={driverLocation}
-  zoom={16}
-  autoFit={acceptedRide ? false : true} // disable auto-fit when a ride is accepted
-  directions={directions}
-  acceptedRide={acceptedRide}
-/>
-
-
+          <DriverInteractiveMap
+            markers={markers}
+            center={driverLocation}
+            zoom={16}
+            autoFit={acceptedRide ? false : true} // disable auto-fit when a ride is accepted
+            directions={directions}
+            acceptedRide={acceptedRide}
+          />
         </div>
         <div className="ride-requests-panel">
           {/* Tab Header */}
@@ -271,21 +275,23 @@ const DriverDashboard = () => {
               <div>
                 <p>Ride {acceptedRide.id} accepted.</p>
                 {acceptedRide.status !== 'in_progress' ? (
-  driverLocation && riderLocation &&
-  getDistanceFromLatLonInMeters(
-    driverLocation.lat,
-    driverLocation.lng,
-    riderLocation.lat,
-    riderLocation.lng
-  ) < 55 ? (
-    <button onClick={handleStartRide}>Start Ride</button>
-  ) : (
-    <p>Move closer to pickup location</p>
-  )
-) : (
-  <button onClick={handleCompleteRide}>Complete Ride</button>
-)}
-
+                  <div>
+                    {driverLocation && riderLocation &&
+                    getDistanceFromLatLonInMeters(
+                      driverLocation.lat,
+                      driverLocation.lng,
+                      riderLocation.lat,
+                      riderLocation.lng
+                    ) < 55 ? (
+                      <button onClick={handleStartRide}>Start Ride</button>
+                    ) : (
+                      <p>Move closer to pickup location</p>
+                    )}
+                    <button onClick={handleCancelRide}>Cancel Ride</button>
+                  </div>
+                ) : (
+                  <button onClick={handleCompleteRide}>Complete Ride</button>
+                )}
               </div>
             )
           )}
