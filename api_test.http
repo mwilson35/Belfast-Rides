@@ -1,8 +1,2 @@
-POST http://localhost:5000/auth/driver-signup
-Content-Type: application/json
-
-{
-    "username": "newdriver2",
-    "email": "newdriver2@example.com",
-    "password": "securePassword123"
-}
+GET http://localhost:5000/admin/rides
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwidmVyaWZpZWQiOjEsImlhdCI6MTc0NDA0NTgzMywiZXhwIjoxNzQ0MDQ5NDMzfQ.6PoR-w3mNGK85g2pU3TIUkxiCWXMYcAyoTxAN4T_RZc
