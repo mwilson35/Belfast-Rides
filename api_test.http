@@ -1,2 +1,8 @@
-### Get all drivers (unauthenticated)
-GET http://localhost:5000/admin/drivers
+POST http://localhost:5000/auth/driver-signup
+Content-Type: application/json
+
+{
+    "username": "newdriver2",
+    "email": "newdriver2@example.com",
+    "password": "securePassword123"
+}
