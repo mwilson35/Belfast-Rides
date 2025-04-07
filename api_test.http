@@ -1,2 +1,2 @@
-GET http://localhost:5000/driver/earnings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImRyaXZlciIsInZlcmlmaWVkIjoxLCJpYXQiOjE3NDM0MjkzMzgsImV4cCI6MTc0MzQzMjkzOH0.siRvD3UkKY3r3IUDN6OxQSiL-_KtGrepXii0oOVO3VU
+### Get all drivers (unauthenticated)
+GET http://localhost:5000/admin/drivers

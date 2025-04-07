@@ -13,14 +13,14 @@ const usersRoutes = require('./routes/users');
 const userDocumentsRouter = require('./routes/userDocuments');
 const ratingsRouter = require('./routes/ratings');
 const db = require('./db'); // Ensure your DB connection is set up
-
+const adminRoutes = require('./routes/admin');
 const app = express();
 
 // Middleware to enable CORS and parse request bodies
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use('/admin', adminRoutes);
 // Register common routes
 app.use('/users', usersRoutes);
 app.use('/documents', userDocumentsRouter);
