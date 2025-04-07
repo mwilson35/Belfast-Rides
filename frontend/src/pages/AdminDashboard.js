@@ -18,18 +18,16 @@ export default function AdminDashboard() {
       .catch(err => console.error('Failed to fetch drivers:', err));
   };
 
-  const verifyDriver = (driverId) => {
+  const verifyDriver = (driverId, verified) => {
     const token = localStorage.getItem('token');
-    axios.post('http://localhost:5000/rides/verify-driver', 
-      { driverId }, 
+    axios.post('http://localhost:5000/rides/verify-driver',
+      { driverId, verified },
       { headers: { Authorization: `Bearer ${token}` } }
     )
-    .then(() => {
-      // Refresh the list after verification
-      fetchDrivers();
-    })
-    .catch(err => console.error('Failed to verify driver:', err));
+    .then(() => fetchDrivers())
+    .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
   };
+  
 
   return (
     <div className="admin-container">
@@ -70,15 +68,23 @@ export default function AdminDashboard() {
                     <td className="p-2 border">{driver.email}</td>
                     <td className="p-2 border">{driver.verified ? '✅' : '❌'}</td>
                     <td className="p-2 border">
-                      {!driver.verified && (
-                        <button 
-                          onClick={() => verifyDriver(driver.id)}
-                          className="verify-btn"
-                        >
-                          Verify
-                        </button>
-                      )}
-                    </td>
+  {driver.verified ? (
+    <button
+      onClick={() => verifyDriver(driver.id, false)}
+      className="unverify-btn"
+    >
+      Unverify
+    </button>
+  ) : (
+    <button
+      onClick={() => verifyDriver(driver.id, true)}
+      className="verify-btn"
+    >
+      Verify
+    </button>
+  )}
+</td>
+
                   </tr>
                 ))}
               </tbody>

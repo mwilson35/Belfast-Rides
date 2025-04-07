@@ -1,37 +1,39 @@
 const db = require('../db');
 
 exports.verifyDriver = async (req, res) => {
-  const { driverId } = req.body;
+  const { driverId, verified } = req.body;
 
   // Ensure the user making the request is an admin
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Forbidden: Admin access only.' });
   }
 
-  if (!driverId) {
-    return res.status(400).json({ message: 'Driver ID is required.' });
+  if (typeof verified !== 'boolean' || !driverId) {
+    return res.status(400).json({ message: 'Driver ID and verified status are required.' });
   }
 
   try {
-    // Update the driver's verified status
     db.query(
-      'UPDATE users SET verified = ? WHERE id = ? AND role = ?',
-      [true, driverId, 'driver'],
+      'UPDATE users SET verified = ? WHERE id = ? AND role = "driver"',
+      [verified, driverId],
       (err, results) => {
         if (err) {
-          console.error('Error verifying driver:', err.message);
-          return res.status(500).json({ message: 'Database error during verification.' });
+          console.error('Error updating verification:', err.message);
+          return res.status(500).json({ message: 'Database error during update.' });
         }
 
         if (results.affectedRows === 0) {
-          return res.status(404).json({ message: 'Driver not found or already verified.' });
+          return res.status(404).json({ message: 'Driver not found or update not applied.' });
         }
 
-        res.json({ message: 'Driver verified successfully.', driverId });
+        res.json({
+          message: `Driver ${verified ? 'verified' : 'unverified'} successfully.`,
+          driverId
+        });
       }
     );
   } catch (error) {
-    console.error('Error during driver verification:', error.message);
+    console.error('Error in verification handler:', error.message);
     res.status(500).json({ message: 'Internal server error.' });
   }
 };
