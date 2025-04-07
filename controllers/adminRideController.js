@@ -2,20 +2,36 @@ const db = require('../db');
 
 // View all rides
 exports.getAllRides = (req, res) => {
-  const query = `
-    SELECT r.id, r.pickup_location, r.destination, r.status, r.driver_id, u.username AS driver_name
+    const query = `
+    SELECT 
+      r.id, 
+      r.pickup_location, 
+      r.destination, 
+      r.status, 
+      r.driver_id, 
+      r.rider_id,
+      r.requested_at,
+      r.completed_at,
+      r.fare,
+      r.estimated_fare,
+      r.tip,
+      r.surge_multiplier,
+      r.distance,
+      u.username AS driver_name
     FROM rides r
     LEFT JOIN users u ON r.driver_id = u.id
     ORDER BY r.created_at DESC
   `;
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching rides:', err.message);
-      return res.status(500).json({ message: 'Error fetching rides' });
-    }
-    res.json(results);
-  });
-};
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error('Error fetching rides:', err.message);
+        return res.status(500).json({ message: 'Error fetching rides' });
+      }
+      res.json(results);
+    });
+  };
+  
 
 // Assign a driver to a ride
 exports.assignDriver = (req, res) => {
