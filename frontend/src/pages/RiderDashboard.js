@@ -16,8 +16,7 @@ import {
   fetchRideHistory,
   fetchProfile,
   fetchActiveRide,
-  fetchAcceptedRideDetails,
-  fetchRouteData,
+  fetchAcceptedRideDetails
 } from '../services/rideService';
 
 const RiderDashboard = () => {
@@ -38,12 +37,14 @@ const RiderDashboard = () => {
   const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
   const [activeTab, setActiveTab] = useState('rideRequest');
 
-  const activeRideRef = useRef(activeRide);
-  useEffect(() => {
-    activeRideRef.current = activeRide;
-  }, [activeRide]);
+  const notify = (msg) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(''), 4000);
+  };
 
-  // NEW: Declare socketRef so it's available throughout
+  const activeRideRef = useRef(activeRide);
+  useEffect(() => { activeRideRef.current = activeRide; }, [activeRide]);
+
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -66,15 +67,13 @@ const RiderDashboard = () => {
       try {
         const historyData = await fetchRideHistory();
         setRideHistory(historyData);
-      } catch (error) {
-        setNotification('Failed to load ride history.');
-      }
+      } catch { notify('Failed to load ride history.'); }
+
       try {
         const profileData = await fetchProfile();
         setProfile(profileData);
-      } catch (error) {
-        setNotification('Failed to load profile.');
-      }
+      } catch { notify('Failed to load profile.'); }
+
       try {
         const activeRideData = await fetchActiveRide();
         if (!activeRideData) {
@@ -87,10 +86,10 @@ const RiderDashboard = () => {
         }
         if (activeRideData.status === 'accepted') {
           try {
-            const enrichedRide = await fetchAcceptedRideDetails(activeRideData.id);
-            setActiveRide(enrichedRide);
-            localStorage.setItem('activeRide', JSON.stringify(enrichedRide));
-          } catch (error) {
+            const enriched = await fetchAcceptedRideDetails(activeRideData.id);
+            setActiveRide(enriched);
+            localStorage.setItem('activeRide', JSON.stringify(enriched));
+          } catch {
             setActiveRide(activeRideData);
             localStorage.setItem('activeRide', JSON.stringify(activeRideData));
           }
@@ -161,7 +160,9 @@ const RiderDashboard = () => {
       console.log('rideCancelled event received:', data);
       setNotification('Your ride has been cancelled by the driver.');
       setActiveRide(null);
+      handleClearPreview(); // 👈 use your actual function's name
     });
+    
     
     
   
