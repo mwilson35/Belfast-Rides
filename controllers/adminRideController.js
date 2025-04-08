@@ -34,6 +34,7 @@ exports.getAllRides = (req, res) => {
   
 
 // Assign a driver to a ride
+// Assign a driver to a ride
 exports.assignDriver = (req, res) => {
   const { rideId, driverId } = req.body;
 
@@ -41,15 +42,34 @@ exports.assignDriver = (req, res) => {
     return res.status(400).json({ message: 'rideId and driverId are required' });
   }
 
-  const query = 'UPDATE rides SET driver_id = ? WHERE id = ?';
-  db.query(query, [driverId, rideId], (err) => {
+  const checkStatusQuery = 'SELECT status FROM rides WHERE id = ?';
+  db.query(checkStatusQuery, [rideId], (err, results) => {
     if (err) {
-      console.error('Error assigning driver:', err.message);
-      return res.status(500).json({ message: 'Failed to assign driver' });
+      console.error('Error checking ride status:', err.message);
+      return res.status(500).json({ message: 'Failed to validate ride status' });
     }
-    res.json({ message: 'Driver assigned successfully' });
+
+    const ride = results[0];
+    if (!ride) {
+      return res.status(404).json({ message: 'Ride not found' });
+    }
+
+    if (ride.status !== 'requested') {
+      return res.status(400).json({ message: `Cannot assign driver to a ride with status "${ride.status}"` });
+    }
+
+    const updateQuery = 'UPDATE rides SET driver_id = ?, status = "accepted" WHERE id = ?';
+    db.query(updateQuery, [driverId, rideId], (err) => {
+      if (err) {
+        console.error('Error assigning driver:', err.message);
+        return res.status(500).json({ message: 'Failed to assign driver' });
+      }
+      res.json({ message: 'Driver assigned successfully and ride marked as accepted.' });
+    });
   });
 };
+
+
 
 // Cancel a ride
 exports.cancelRide = (req, res) => {

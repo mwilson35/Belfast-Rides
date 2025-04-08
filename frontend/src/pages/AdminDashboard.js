@@ -28,6 +28,31 @@ export default function AdminDashboard() {
     .then(() => fetchDrivers())
     .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
   };
+  const handleAssignDriver = (rideId, driverId) => {
+    const token = localStorage.getItem('token');
+    axios.post('http://localhost:5000/admin/rides/assign', { rideId, driverId }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(() => {
+      console.log(`Assigned driver ${driverId} to ride ${rideId}`);
+      // Refresh rides
+      setActiveTab(''); setActiveTab('manageRides');
+    })
+    .catch(err => console.error('Failed to assign driver:', err));
+  };
+  
+  const handleCancelRide = (rideId) => {
+    const token = localStorage.getItem('token');
+    axios.post('http://localhost:5000/admin/rides/cancel', { rideId }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(() => {
+      console.log(`Cancelled ride ${rideId}`);
+      setActiveTab(''); setActiveTab('manageRides');
+    })
+    .catch(err => console.error('Failed to cancel ride:', err));
+  };
+  
 
   useEffect(() => {
     if (activeTab === 'rides') {
@@ -43,6 +68,25 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab === 'manageRides') {
+      const token = localStorage.getItem('token');
+  
+      axios.get('http://localhost:5000/admin/rides', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setRides(res.data))
+      .catch(err => console.error('Failed to fetch rides:', err));
+  
+      axios.get('http://localhost:5000/admin/drivers', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setDrivers(res.data))
+      .catch(err => console.error('Failed to fetch drivers:', err));
+    }
+  }, [activeTab]);
+  
+
   return (
     <div className="admin-container">
       <aside className="admin-sidebar">
@@ -51,6 +95,8 @@ export default function AdminDashboard() {
           <li onClick={() => setActiveTab('dashboard')}>Dashboard</li>
           <li onClick={() => setActiveTab('drivers')}>Drivers</li>
           <li onClick={() => setActiveTab('rides')}>Rides</li>
+          <li onClick={() => setActiveTab('manageRides')}>Manage Rides</li>
+
         </ul>
       </aside>
 
@@ -136,11 +182,64 @@ export default function AdminDashboard() {
                     <td className="p-2 border">{ride.distance ? `${ride.distance} km` : '—'}</td>
                   </tr>
                 ))}
+                
               </tbody>
             </table>
           </>
+          
         )}
+        {activeTab === 'manageRides' && (
+  <>
+    <h2>Manage Rides</h2>
+    <table className="min-w-full border text-sm">
+      <thead>
+        <tr>
+          <th className="p-2 border">Ride ID</th>
+          <th className="p-2 border">Pickup</th>
+          <th className="p-2 border">Destination</th>
+          <th className="p-2 border">Status</th>
+          <th className="p-2 border">Assigned Driver</th>
+          <th className="p-2 border">Assign</th>
+          <th className="p-2 border">Cancel</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rides.map(ride => (
+          <tr key={ride.id}>
+            <td className="p-2 border">{ride.id}</td>
+            <td className="p-2 border">{ride.pickup_location}</td>
+            <td className="p-2 border">{ride.destination}</td>
+            <td className="p-2 border">{ride.status}</td>
+            <td className="p-2 border">{ride.driver_name || 'Unassigned'}</td>
+            <td className="p-2 border">
+              <select
+                onChange={e => handleAssignDriver(ride.id, e.target.value)}
+                defaultValue=""
+                className="border p-1"
+              >
+                <option value="" disabled>Choose driver</option>
+                {drivers.map(driver => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.username}
+                  </option>
+                ))}
+              </select>
+            </td>
+            <td className="p-2 border">
+              <button onClick={() => handleCancelRide(ride.id)} className="cancel-btn">
+                Cancel
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </>
+)}
+
       </main>
     </div>
+    
   );
 }
+  
