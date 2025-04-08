@@ -55,26 +55,26 @@ router.post('/verify-driver', authenticateToken, driverVerificationController.ve
 router.get('/active', authenticateToken, rideActiveController.getActiveRide);
 
 // In routes/rides.js (add this near your other test endpoints)
-router.post('/test-driver-arrived', authenticateToken, (req, res) => {
-    const io = req.app.get('io');
-    const { rideId } = req.body;
-    if (!rideId) {
-      return res.status(400).json({ message: 'rideId is required' });
-    }
-    io.emit('driverArrived', { rideId, message: 'Driver has arrived (test event)' });
-    res.json({ message: 'driverArrived event emitted' });
-  });
+// router.post('/test-driver-arrived', authenticateToken, (req, res) => {
+//     const io = req.app.get('io');
+//     const { rideId } = req.body;
+//     if (!rideId) {
+//       return res.status(400).json({ message: 'rideId is required' });
+//     }
+//     io.emit('driverArrived', { rideId, message: 'Driver has arrived (test event)' });
+//     res.json({ message: 'driverArrived event emitted' });
+//   });
   
 
-  router.post('/test-ride-in-progress', authenticateToken, (req, res) => {
-    const io = req.app.get('io');
-    const { rideId } = req.body;
-    if (!rideId) {
-      return res.status(400).json({ message: 'rideId is required' });
-    }
-    io.emit('rideInProgress', { rideId, message: 'Ride is now in progress (test event)' });
-    res.json({ message: 'rideInProgress event emitted' });
-  });
+  // router.post('/test-ride-in-progress', authenticateToken, (req, res) => {
+  //   const io = req.app.get('io');
+  //   const { rideId } = req.body;
+  //   if (!rideId) {
+  //     return res.status(400).json({ message: 'rideId is required' });
+  //   }
+  //   io.emit('rideInProgress', { rideId, message: 'Ride is now in progress (test event)' });
+  //   res.json({ message: 'rideInProgress event emitted' });
+  // })
   
 
 module.exports = router;

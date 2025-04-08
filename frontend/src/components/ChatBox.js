@@ -23,6 +23,15 @@ const ChatBox = ({ rideId, role }) => {
       localStorage.setItem(`chatMessages_${rideId}`, JSON.stringify(messages));
     }
   }, [messages, rideId]);
+  
+  useEffect(() => {
+    return () => {
+      if (rideId) {
+        localStorage.removeItem(`chatMessages_${rideId}`);
+      }
+    };
+  }, [rideId]);
+  
 
   useEffect(() => {
     // Connect to the Socket.IO server

@@ -2,8 +2,8 @@ import '../styles/Dashboard.css';
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
+import { useCallback } from 'react';
 import DocumentUpload from '../components/DocumentUpload';
-import Notifications from '../components/Notifications';
 import RatingModal from '../components/RatingModal';
 import ChatBox from '../components/ChatBox';
 import RideSummary from '../components/RideSummary';
@@ -114,7 +114,7 @@ const RiderDashboard = () => {
     });
   
     socketRef.current.on('driverAccepted', async (data) => {
-      setNotification('Your ride has been accepted!');
+      notify('Your ride has been accepted!');
       try {
         const rideId =
           data.rideId ||
@@ -128,37 +128,40 @@ const RiderDashboard = () => {
     });
   
     socketRef.current.on('driverArrived', () => {
-      setNotification('Your driver has arrived!');
+      notify('Your driver has arrived!');
+
       setActiveRide((prev) => (prev ? { ...prev, status: 'arrived' } : prev));
     });
   
     socketRef.current.on('rideInProgress', () => {
-      setNotification('Your ride is now in progress!');
+      notify('Your ride is now in progress!');
       setActiveRide((prev) => (prev ? { ...prev, status: 'in progress' } : prev));
     });
   
     socketRef.current.on('rideCompleted', (data) => {
-      setNotification('Your ride is complete!');
+      notify('Your ride is complete!');
       const rideDetails = activeRideRef.current || data;
       setRideSummary(rideDetails);
       setShowRideSummaryModal(true);
       setTimeout(() => {
         setActiveRide(null);
-        setRoute(null);  // <- the fix
-        setRidePreview(null); // optional, if preview is still shown
-        localStorage.removeItem('route'); // also clean up localStorage
+        setRoute(null);
+        setRidePreview(null);
+        setDriverLocation(null); // 👈 ghost driver, be gone
+        localStorage.removeItem('route');
         localStorage.removeItem('ridePreview');
-        
+    
         fetchRideHistory().then(setRideHistory).catch(() =>
-          setNotification('Failed to load ride history.')
+          notify('Failed to load ride history.')
         );
       }, 500);
     });
+    
   
     // Listener for ride cancellation:
     socketRef.current.on('rideCancelled', (data) => {
       console.log('rideCancelled event received:', data);
-      setNotification('Your ride has been cancelled by the driver.');
+      notify('Your ride has been cancelled by the driver.');
       setActiveRide(null);
       handleClearPreview(); // 👈 use your actual function's name
     });
@@ -198,8 +201,13 @@ const RiderDashboard = () => {
       try {
         const activeRideData = await fetchActiveRide();
         if (activeRideData?.status === 'arrived') {
-          setActiveRide((prev) => (prev?.status !== 'arrived' ? activeRideData : prev));
-          setNotification('Your driver has arrived!');
+          setActiveRide((prev) => {
+            if (prev?.status !== 'arrived') {
+              notify('Your driver has arrived!');
+              return activeRideData;
+            }
+            return prev;
+          });
         }
       } catch (error) {
         console.error('Error polling active ride status:', error);
@@ -208,20 +216,21 @@ const RiderDashboard = () => {
     const intervalId = setInterval(pollActiveRideStatus, 10000);
     return () => clearInterval(intervalId);
   }, []);
+  
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
     try {
       const response = await api.post('/rides/preview', { pickupLocation, destination });
       setRidePreview(response.data);
-      setNotification('Ride preview loaded.');
+      notify('Ride preview loaded.');
 
       // Expecting route geometry as GeoJSON in response.data.encodedPolyline
       const geo = response.data.encodedPolyline;
 
       if (!geo || !geo.features || !geo.features[0] || !geo.features[0].geometry) {
         console.error('Invalid Mapbox preview route data:', geo);
-        setNotification('No valid route found.');
+        notify('No valid route found.');
         return;
       }
       
@@ -233,16 +242,19 @@ const RiderDashboard = () => {
       localStorage.setItem('route', JSON.stringify(geoPoints));
     } catch (error) {
       console.error('Error previewing ride:', error);
-      setNotification('Failed to preview ride.');
+      notify('Failed to preview ride.');
     }
   };
-  const handleClearPreview = () => {
+
+
+  const handleClearPreview = useCallback(() => {
     setRidePreview(null);
     setRoute(null);
     localStorage.removeItem('ridePreview');
     localStorage.removeItem('route');
-    setNotification('Ride preview cleared.');
-  };
+    notify('Ride preview cleared.');
+  }, []);
+  
   
 
   const handleRequestRide = async () => {
@@ -252,13 +264,13 @@ const RiderDashboard = () => {
       const geoPoints = encodedPolyline.features[0].geometry.coordinates.map(
         ([lng, lat]) => ({ lat, lng })
       );
-      setNotification(`Ride requested! ID: ${rideId}`);
+      notify(`Ride requested! ID: ${rideId}`);
       setActiveRide({ ...response.data, status: 'requested', rideId });
       setRoute(geoPoints);
       setRidePreview({ pickupLat, pickupLng, destinationLat, destinationLng });
     } catch (error) {
       console.error('Error requesting ride:', error);
-      setNotification('Failed to request ride.');
+      notify('Failed to request ride.');
     }
   };
 
@@ -267,7 +279,7 @@ const RiderDashboard = () => {
     if (!confirmCancel) return;
     try {
       const response = await api.post('/rides/cancel', { rideId: activeRide.rideId || activeRide.id });
-      setNotification(`Ride canceled. Fee: £${response.data.cancellationFee || 0}`);
+      notify(`Ride canceled. Fee: £${response.data.cancellationFee || 0}`);
       setActiveRide(null);
       // Remove only ride-specific keys, not the auth token.
       localStorage.removeItem('ridePreview');
@@ -281,7 +293,7 @@ const RiderDashboard = () => {
       setRideHistory(historyData);
     } catch (error) {
       console.error('Error canceling ride:', error);
-      setNotification('Failed to cancel ride.');
+      notify('Failed to cancel ride.');
     }
   };
   
@@ -296,7 +308,7 @@ const RiderDashboard = () => {
   return (
     <div>
       <Navbar />
-      <Notifications />
+
       <div className="dashboard-container" style={{ padding: '1rem' }}>
         <div className="dashboard-tabs d-flex flex-wrap justify-content-around mb-3">
           {['rideRequest', 'activeRide', 'rideHistory', 'profile', 'documents', 'chat'].map(tab => (
@@ -373,10 +385,11 @@ const RiderDashboard = () => {
         </div>
 
         {notification && (
-          <section className="notification-section mt-3 p-2 bg-warning">
-            <p>{notification}</p>
-          </section>
-        )}
+  <section className="notification-section mt-3 p-2 bg-warning" style={{ position: 'fixed', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999 }}>
+    <p>{notification}</p>
+  </section>
+)}
+
       </div>
 
       {showRideSummaryModal && rideSummary && (
