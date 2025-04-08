@@ -145,6 +145,11 @@ const RiderDashboard = () => {
       setShowRideSummaryModal(true);
       setTimeout(() => {
         setActiveRide(null);
+        setRoute(null);  // <- the fix
+        setRidePreview(null); // optional, if preview is still shown
+        localStorage.removeItem('route'); // also clean up localStorage
+        localStorage.removeItem('ridePreview');
+        
         fetchRideHistory().then(setRideHistory).catch(() =>
           setNotification('Failed to load ride history.')
         );
@@ -218,7 +223,7 @@ const RiderDashboard = () => {
         setNotification('No valid route found.');
         return;
       }
-
+      
       const geoPoints = geo.features[0].geometry.coordinates.map(
         ([lng, lat]) => ({ lat, lng })
       );
@@ -230,6 +235,14 @@ const RiderDashboard = () => {
       setNotification('Failed to preview ride.');
     }
   };
+  const handleClearPreview = () => {
+    setRidePreview(null);
+    setRoute(null);
+    localStorage.removeItem('ridePreview');
+    localStorage.removeItem('route');
+    setNotification('Ride preview cleared.');
+  };
+  
 
   const handleRequestRide = async () => {
     try {
@@ -308,6 +321,17 @@ const RiderDashboard = () => {
               handleRequestRide={handleRequestRide}
             />
             <MapSection markers={markers} route={route} />
+            {ridePreview && (
+  <div className="mt-2 d-flex justify-content-end">
+    <button
+      className="btn btn-outline-danger"
+      onClick={handleClearPreview}
+    >
+      Clear Preview
+    </button>
+  </div>
+)}
+
           </>
         )}
 
@@ -315,6 +339,8 @@ const RiderDashboard = () => {
           <>
             <ActiveRideSection activeRide={activeRide} eta={eta} handleCancelRide={handleCancelRide} />
             <MapSection markers={markers} route={route} />
+
+
           </>
         )}
 
