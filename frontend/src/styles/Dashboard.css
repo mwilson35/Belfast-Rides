@@ -165,3 +165,7 @@
     margin: 0.5rem 0;
   }
 }
+.dashboard-tabs button {
+  flex: 1 1 150px;
+  text-align: center;
+}

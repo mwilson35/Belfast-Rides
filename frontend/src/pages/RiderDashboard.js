@@ -105,6 +105,14 @@ const RiderDashboard = () => {
     loadData();
   }, []);
 
+  const handleClearPreview = useCallback(() => {
+    setRidePreview(null);
+    setRoute(null);
+    localStorage.removeItem('ridePreview');
+    localStorage.removeItem('route');
+    notify('Ride preview cleared.');
+  }, []); // 👋 Comes too late
+  
   // Socket setup using socketRef
   useEffect(() => {
     socketRef.current = require('socket.io-client')('http://localhost:5000');
@@ -164,7 +172,7 @@ const RiderDashboard = () => {
       console.log('rideCancelled event received:', data);
       notify('Your ride has been cancelled by the driver.');
       setActiveRide(null);
-      handleClearPreview(); // 👈 use your actual function's name
+      handleClearPreview(); 
     });
     
     
@@ -174,7 +182,9 @@ const RiderDashboard = () => {
     if (storedDriverLocation) setDriverLocation(JSON.parse(storedDriverLocation));
   
     return () => socketRef.current.disconnect();
-  }, []);
+  }, [handleClearPreview]);
+
+
 
   useEffect(() => {
     let intervalId;
@@ -248,13 +258,7 @@ const RiderDashboard = () => {
   };
 
 
-  const handleClearPreview = useCallback(() => {
-    setRidePreview(null);
-    setRoute(null);
-    localStorage.removeItem('ridePreview');
-    localStorage.removeItem('route');
-    notify('Ride preview cleared.');
-  }, []);
+
   
   
 
@@ -305,23 +309,32 @@ const RiderDashboard = () => {
     markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
   }
   if (driverLocation) markers.push(driverLocation);
+  const TAB_LABELS = {
+    rideRequest: 'Request a Ride',
+    activeRide: 'Your Current Ride',
+    rideHistory: 'Ride History',
+    profile: 'Your Profile',
+    documents: 'Documents',
+    chat: 'Chat'
+  };
 
   return (
     <div>
       <Navbar />
 
       <div className="dashboard-container" style={{ padding: '1rem' }}>
-        <div className="dashboard-tabs d-flex flex-wrap justify-content-around mb-3">
-          {['rideRequest', 'activeRide', 'rideHistory', 'profile', 'documents', 'chat'].map(tab => (
-            <button
-              key={tab}
-              className={`btn btn-outline-primary ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab.replace(/([A-Z])/g, ' $1').trim()}
-            </button>
-          ))}
-        </div>
+      <div className="dashboard-tabs d-flex flex-wrap justify-content-around mb-3">
+  {Object.entries(TAB_LABELS).map(([key, label]) => (
+    <button
+      key={key}
+      className={`btn btn-outline-primary ${activeTab === key ? 'active' : ''}`}
+      onClick={() => setActiveTab(key)}
+    >
+      {label}
+    </button>
+  ))}
+</div>
+
 
         <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
   {activeTab === 'rideRequest' && (
