@@ -1,5 +1,6 @@
 import '../styles/Dashboard.css';
 import React, { useState, useEffect, useRef } from 'react';
+import { LoadScript } from '@react-google-maps/api';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { useCallback } from 'react';
@@ -322,40 +323,44 @@ const RiderDashboard = () => {
           ))}
         </div>
 
-        {activeTab === 'rideRequest' && (
-          <>
-            <RideRequest
-              pickupLocation={pickupLocation}
-              setPickupLocation={setPickupLocation}
-              destination={destination}
-              setDestination={setDestination}
-              ridePreview={ridePreview}
-              handlePreviewRide={handlePreviewRide}
-              handleRequestRide={handleRequestRide}
-            />
-            <MapSection markers={markers} route={route} />
-            {ridePreview && (
-  <div className="mt-2 d-flex justify-content-end">
-    <button
-      className="btn btn-outline-danger"
-      onClick={handleClearPreview}
-    >
-      Clear Preview
-    </button>
-  </div>
-)}
+        <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+  {activeTab === 'rideRequest' && (
+    <>
+      <RideRequest
+        pickupLocation={pickupLocation}
+        setPickupLocation={setPickupLocation}
+        destination={destination}
+        setDestination={setDestination}
+        ridePreview={ridePreview}
+        handlePreviewRide={handlePreviewRide}
+        handleRequestRide={handleRequestRide}
+      />
+      <MapSection markers={markers} route={route} />
+      {ridePreview && (
+        <div className="mt-2 d-flex justify-content-end">
+          <button
+            className="btn btn-outline-danger"
+            onClick={handleClearPreview}
+          >
+            Clear Preview
+          </button>
+        </div>
+      )}
+    </>
+  )}
 
-          </>
-        )}
+  {activeTab === 'activeRide' && (
+    <>
+      <ActiveRideSection
+        activeRide={activeRide}
+        eta={eta}
+        handleCancelRide={handleCancelRide}
+      />
+      <MapSection markers={markers} route={route} />
+    </>
+  )}
+</LoadScript>
 
-        {activeTab === 'activeRide' && (
-          <>
-            <ActiveRideSection activeRide={activeRide} eta={eta} handleCancelRide={handleCancelRide} />
-            <MapSection markers={markers} route={route} />
-
-
-          </>
-        )}
 
         {activeTab === 'rideHistory' && (
           <RideHistory
