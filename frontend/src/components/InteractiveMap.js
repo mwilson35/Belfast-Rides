@@ -18,6 +18,10 @@ const InteractiveMap = ({
   const handleMapLoad = (map) => {
     mapRef.current = map;
   };
+  useEffect(() => {
+    console.log("InteractiveMap rendering with route:", route);
+  }, [route]);
+  
 
   useEffect(() => {
     if (autoFit && mapRef.current && isValidRoute) {
@@ -28,6 +32,13 @@ const InteractiveMap = ({
       mapRef.current.fitBounds(bounds);
     }
   }, [route, autoFit, isValidRoute]);
+
+  // New effect: force the map to re-center on the first route coordinate when the route changes.
+  useEffect(() => {
+    if (mapRef.current && isValidRoute) {
+      mapRef.current.setCenter(route[0]);
+    }
+  }, [route, isValidRoute]);
 
   return (
     <GoogleMap
@@ -46,6 +57,7 @@ const InteractiveMap = ({
       {isValidRoute && (
         <>
           <Polyline
+            key={JSON.stringify(route)} // forces Polyline to fully re-render
             path={route}
             options={{
               strokeColor: '#1E90FF',

@@ -7,62 +7,41 @@ exports.previewRide = async (req, res) => {
     return res.status(400).json({ message: 'Pickup and destination locations are required.' });
   }
 
-  const mapboxToken = process.env.MAPBOX_TOKEN;
+  const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   try {
     console.log(`Previewing ride from ${pickupLocation} to ${destination}`);
 
-    // 1. Geocode pickup location
-    const pickupGeo = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(pickupLocation)}.json`, {
-      params: { access_token: mapboxToken }
-    });
-
-    // 2. Geocode destination
-    const destinationGeo = await axios.get(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destination)}.json`, {
-      params: { access_token: mapboxToken }
-    });
-
-    if (!pickupGeo.data.features.length || !destinationGeo.data.features.length) {
-      return res.status(400).json({ message: 'Unable to find location coordinates. Check addresses.' });
-    }
-
-    const [pickupLng, pickupLat] = pickupGeo.data.features[0].center;
-    const [destLng, destLat] = destinationGeo.data.features[0].center;
-
-    // 3. Get directions from Mapbox
-    const directionsResponse = await axios.get(`https://api.mapbox.com/directions/v5/mapbox/driving/${pickupLng},${pickupLat};${destLng},${destLat}`, {
+    const directionsResponse = await axios.get(`https://maps.googleapis.com/maps/api/directions/json`, {
       params: {
-        access_token: mapboxToken,
-        geometries: 'geojson'
+        origin: pickupLocation,
+        destination: destination,
+        mode: 'driving',
+        key: googleApiKey
       }
     });
 
-    const directionsData = directionsResponse.data;
+    const directions = directionsResponse.data;
 
-    if (!directionsData.routes || !directionsData.routes.length) {
-      return res.status(400).json({ message: 'No valid route found with Mapbox.' });
+    if (!directions.routes || !directions.routes.length) {
+      return res.status(400).json({ message: 'No valid route found with Google.' });
     }
 
-    const route = directionsData.routes[0];
-    const distanceInMeters = route.distance;
-    const durationInSeconds = route.duration;
+    const route = directions.routes[0];
+    const distanceInMeters = route.legs[0].distance.value;
+    const durationInSeconds = route.legs[0].duration.value;
     const distanceInKm = distanceInMeters / 1000;
 
     const baseFare = 2.5;
     const farePerKm = 1.2;
     const estimatedFare = baseFare + distanceInKm * farePerKm;
 
-    // Format route as GeoJSON FeatureCollection
-    const geojsonRoute = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: route.geometry,
-          properties: {}
-        }
-      ]
-    };
+    const encodedPolyline = route.overview_polyline.points;
+
+    const pickupLat = route.legs[0].start_location.lat;
+    const pickupLng = route.legs[0].start_location.lng;
+    const destinationLat = route.legs[0].end_location.lat;
+    const destinationLng = route.legs[0].end_location.lng;
 
     res.status(200).json({
       pickupLocation,
@@ -70,14 +49,14 @@ exports.previewRide = async (req, res) => {
       distance: `${distanceInKm.toFixed(2)} km`,
       duration: `${Math.round(durationInSeconds / 60)} mins`,
       estimatedFare: `£${estimatedFare.toFixed(2)}`,
-      encodedPolyline: geojsonRoute,
+      encodedPolyline,
       pickupLat,
       pickupLng,
-      destinationLat: destLat,
-      destinationLng: destLng
+      destinationLat,
+      destinationLng
     });
   } catch (error) {
-    console.error('Error during Mapbox preview:', error.response?.data || error.message);
-    res.status(500).json({ message: 'Failed to preview ride with Mapbox.' });
+    console.error('Error during Google preview:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to preview ride with Google.' });
   }
 };

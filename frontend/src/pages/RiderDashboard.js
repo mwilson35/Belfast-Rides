@@ -1,5 +1,6 @@
 import '../styles/Dashboard.css';
 import React, { useState, useEffect, useRef } from 'react';
+import polyline from '@mapbox/polyline';
 import { LoadScript } from '@react-google-maps/api';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
@@ -27,7 +28,7 @@ const RiderDashboard = () => {
   const [ridePreview, setRidePreview] = useState(null);
   const [activeRide, setActiveRide] = useState(null);
   const [rideHistory, setRideHistory] = useState([]);
-  const [route, setRoute] = useState(null);
+  
   const [notification, setNotification] = useState('');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [currentRideForRating, setCurrentRideForRating] = useState(null);
@@ -37,6 +38,9 @@ const RiderDashboard = () => {
   const [rideSummary, setRideSummary] = useState(null);
   const [showRideSummaryModal, setShowRideSummaryModal] = useState(false);
   const [activeTab, setActiveTab] = useState('rideRequest');
+  const [previewRoute, setPreviewRoute] = useState(null); 
+const [activeRoute, setActiveRoute] = useState(null);   
+
 
   const notify = (msg) => {
     setNotification(msg);
@@ -47,6 +51,14 @@ const RiderDashboard = () => {
   useEffect(() => { activeRideRef.current = activeRide; }, [activeRide]);
 
   const socketRef = useRef(null);
+
+  useEffect(() => {
+    const storedActiveRoute = localStorage.getItem('activeRoute');
+    if (storedActiveRoute) {
+      setActiveRoute(JSON.parse(storedActiveRoute));
+    }
+  }, []);
+  
 
   useEffect(() => {
     const storedActiveRide = localStorage.getItem('activeRide');
@@ -60,8 +72,9 @@ const RiderDashboard = () => {
     const storedPreview = localStorage.getItem('ridePreview');
     const storedRoute = localStorage.getItem('route');
     if (storedPreview) setRidePreview(JSON.parse(storedPreview));
-    if (storedRoute) setRoute(JSON.parse(storedRoute));
+    if (storedRoute) setPreviewRoute(JSON.parse(storedRoute));
   }, []);
+  
 
   useEffect(() => {
     const loadData = async () => {
@@ -81,7 +94,7 @@ const RiderDashboard = () => {
           localStorage.removeItem('ridePreview');
           localStorage.removeItem('route');
           setRidePreview(null);
-          setRoute(null);
+          
           setActiveRide(null);
           return;
         }
@@ -107,11 +120,16 @@ const RiderDashboard = () => {
 
   const handleClearPreview = useCallback(() => {
     setRidePreview(null);
-    setRoute(null);
+    setPreviewRoute(null); // 👈 This is the new sheriff in town
+    setPickupLocation('');
+    setDestination('');
     localStorage.removeItem('ridePreview');
-    localStorage.removeItem('route');
+    localStorage.removeItem('route'); // Optional now unless you're persisting previewRoute
     notify('Ride preview cleared.');
-  }, []); // 👋 Comes too late
+  }, []);
+  
+  
+  
   
   // Socket setup using socketRef
   useEffect(() => {
@@ -154,17 +172,21 @@ const RiderDashboard = () => {
       setShowRideSummaryModal(true);
       setTimeout(() => {
         setActiveRide(null);
-        setRoute(null);
+        setActiveRoute(null); // Clear active route state
         setRidePreview(null);
-        setDriverLocation(null); // 👈 ghost driver, be gone
-        localStorage.removeItem('route');
+        setDriverLocation(null);
+        
+        // Clear persisted keys
+        localStorage.removeItem('activeRoute');
         localStorage.removeItem('ridePreview');
-    
+        
         fetchRideHistory().then(setRideHistory).catch(() =>
           notify('Failed to load ride history.')
         );
       }, 500);
     });
+    
+    
     
   
     // Listener for ride cancellation:
@@ -172,8 +194,12 @@ const RiderDashboard = () => {
       console.log('rideCancelled event received:', data);
       notify('Your ride has been cancelled by the driver.');
       setActiveRide(null);
-      handleClearPreview(); 
+      setActiveRoute(null); // Clear the active route from state
+      handleClearPreview();
+      localStorage.removeItem('activeRoute'); // Clear the active route from localStorage
     });
+    
+    
     
     
     
@@ -211,6 +237,17 @@ const RiderDashboard = () => {
     const pollActiveRideStatus = async () => {
       try {
         const activeRideData = await fetchActiveRide();
+        if (!activeRideData) return;
+  
+        // If the status is 'accepted' and we already have enriched driver details, do nothing.
+        if (
+          activeRideData.status === 'accepted' &&
+          activeRideRef.current &&
+          activeRideRef.current.driver_id
+        ) {
+          return;
+        }
+  
         if (activeRideData?.status === 'arrived') {
           setActiveRide((prev) => {
             if (prev?.status !== 'arrived') {
@@ -219,6 +256,8 @@ const RiderDashboard = () => {
             }
             return prev;
           });
+        } else {
+          setActiveRide(activeRideData);
         }
       } catch (error) {
         console.error('Error polling active ride status:', error);
@@ -228,6 +267,7 @@ const RiderDashboard = () => {
     return () => clearInterval(intervalId);
   }, []);
   
+  
 
   const handlePreviewRide = async (e) => {
     e.preventDefault();
@@ -235,49 +275,76 @@ const RiderDashboard = () => {
       const response = await api.post('/rides/preview', { pickupLocation, destination });
       setRidePreview(response.data);
       notify('Ride preview loaded.');
-
-      // Expecting route geometry as GeoJSON in response.data.encodedPolyline
-      const geo = response.data.encodedPolyline;
-
-      if (!geo || !geo.features || !geo.features[0] || !geo.features[0].geometry) {
-        console.error('Invalid Mapbox preview route data:', geo);
+  
+      const encodedPolyline = response.data.encodedPolyline;
+  
+      if (!encodedPolyline) {
         notify('No valid route found.');
         return;
       }
-      
-      const geoPoints = geo.features[0].geometry.coordinates.map(
-        ([lng, lat]) => ({ lat, lng })
+  
+      // Unify decoding: assume polyline.decode returns [lat, lng]
+      const decodedPath = polyline.decode(encodedPolyline).map(
+        ([lat, lng]) => ({ lat, lng })
       );
-      setRoute(geoPoints);
+      console.log("Preview decodedPath:", decodedPath);  // Debug log
+  
+      setPreviewRoute(decodedPath);
       localStorage.setItem('ridePreview', JSON.stringify(response.data));
-      localStorage.setItem('route', JSON.stringify(geoPoints));
+      localStorage.setItem('route', JSON.stringify(decodedPath));
     } catch (error) {
       console.error('Error previewing ride:', error);
       notify('Failed to preview ride.');
     }
   };
-
-
-
   
-  
-
   const handleRequestRide = async () => {
     try {
       const response = await api.post('/rides/request', { pickupLocation, destination });
-      const { rideId, encodedPolyline, pickupLat, pickupLng, destinationLat, destinationLng } = response.data;
-      const geoPoints = encodedPolyline.features[0].geometry.coordinates.map(
-        ([lng, lat]) => ({ lat, lng })
-      );
+      const { rideId, encodedPolyline } = response.data;
+      
+      // Try decoding the polyline from the active ride response.
+      let decodedPath = [];
+      if (encodedPolyline) {
+        decodedPath = polyline.decode(encodedPolyline).map(
+          ([lat, lng]) => ({ lat, lng })
+        );
+      }
+      // If decoding yields an empty array, fallback to the preview route stored in localStorage.
+      if (!decodedPath.length) {
+        const storedRoute = localStorage.getItem('route');
+        if (storedRoute) {
+          decodedPath = JSON.parse(storedRoute);
+        }
+      }
+      
+      console.log("Active ride decodedPath:", decodedPath);  // Expect to see 28 points
+      
+      if (!decodedPath.length) {
+        notify('No valid route found for active ride.');
+        return;
+      }
+      
       notify(`Ride requested! ID: ${rideId}`);
       setActiveRide({ ...response.data, status: 'requested', rideId });
-      setRoute(geoPoints);
-      setRidePreview({ pickupLat, pickupLng, destinationLat, destinationLng });
+      setActiveRoute(decodedPath);
+      
+      // Clear preview values so they don't interfere.
+      setPreviewRoute(null);
+      setRidePreview(null);
+      localStorage.removeItem('ridePreview');
+      localStorage.removeItem('route');
     } catch (error) {
       console.error('Error requesting ride:', error);
       notify('Failed to request ride.');
     }
   };
+  
+  
+  
+  
+  
+  
 
   const handleCancelRide = async () => {
     const confirmCancel = window.confirm("Are you sure you want to cancel this ride? A cancellation fee may apply.");
@@ -285,14 +352,15 @@ const RiderDashboard = () => {
     try {
       const response = await api.post('/rides/cancel', { rideId: activeRide.rideId || activeRide.id });
       notify(`Ride canceled. Fee: £${response.data.cancellationFee || 0}`);
+      // Clear active ride data
       setActiveRide(null);
-      // Remove only ride-specific keys, not the auth token.
+      setActiveRoute(null); // <== Add this to clear the active route state
+      // Clear any preview/active keys from localStorage
       localStorage.removeItem('ridePreview');
       localStorage.removeItem('route');
       localStorage.removeItem('activeRide');
+      localStorage.removeItem('activeRoute');
       setRidePreview(null);
-      setRoute(null);
-      // Optionally, clear driver location if needed:
       setDriverLocation(null);
       const historyData = await fetchRideHistory();
       setRideHistory(historyData);
@@ -303,12 +371,32 @@ const RiderDashboard = () => {
   };
   
   
+  
+  
 
   const markers = [];
+
+  // If there's a preview ride, show those markers
   if (ridePreview?.pickupLat && ridePreview?.pickupLng) {
     markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
   }
-  if (driverLocation) markers.push(driverLocation);
+  if (ridePreview?.destinationLat && ridePreview?.destinationLng) {
+    markers.push({ id: 'dropoff', lat: ridePreview.destinationLat, lng: ridePreview.destinationLng });
+  }
+  
+  // Always show driver location if available
+  if (driverLocation) {
+    markers.push(driverLocation);
+  }
+  
+  // If no preview is active, show active ride markers
+  if (!ridePreview && activeRide?.pickupLat && activeRide?.pickupLng) {
+    markers.push({ id: 'pickup', lat: activeRide.pickupLat, lng: activeRide.pickupLng });
+  }
+  if (!ridePreview && activeRide?.destinationLat && activeRide?.destinationLng) {
+    markers.push({ id: 'dropoff', lat: activeRide.destinationLat, lng: activeRide.destinationLng });
+  }
+  
   const TAB_LABELS = {
     rideRequest: 'Request a Ride',
     activeRide: 'Your Current Ride',
@@ -348,7 +436,9 @@ const RiderDashboard = () => {
         handlePreviewRide={handlePreviewRide}
         handleRequestRide={handleRequestRide}
       />
-      <MapSection markers={markers} route={route} />
+      <MapSection key={`preview-${previewRoute?.length || 0}`} markers={markers} route={previewRoute} />
+
+
       {ridePreview && (
         <div className="mt-2 d-flex justify-content-end">
           <button
@@ -369,7 +459,15 @@ const RiderDashboard = () => {
         eta={eta}
         handleCancelRide={handleCancelRide}
       />
-      <MapSection markers={markers} route={route} />
+<MapSection
+  key={`active-${activeRoute ? activeRoute.length : 0}`}
+  markers={markers}
+  route={activeRoute}
+  center={activeRoute && activeRoute[0] ? activeRoute[0] : { lat: 54.5973, lng: -5.9301 }}
+/>
+
+
+
     </>
   )}
 </LoadScript>
