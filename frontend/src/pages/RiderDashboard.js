@@ -319,10 +319,23 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
           notify('Your driver has arrived!');
         }
   
-        setActiveRide(prev => ({
-          ...prev,
-          ...activeRideData,
-        }));
+        setActiveRide(prev => {
+          const serverStatus = activeRideData.status;
+          const localStatus = prev?.status;
+        
+          const isLocallyAhead = ['arrived', 'in progress', 'completed'].includes(localStatus);
+          const isServerBehind = ['accepted', 'requested'].includes(serverStatus);
+        
+          const resolvedStatus =
+            isLocallyAhead && isServerBehind ? localStatus : serverStatus;
+        
+          return {
+            ...prev,
+            ...activeRideData,
+            status: resolvedStatus,
+          };
+        });
+        
         
       } catch (error) {
         console.error('Error polling active ride status:', error);
