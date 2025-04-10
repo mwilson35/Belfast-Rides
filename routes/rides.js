@@ -26,15 +26,24 @@ const rideActiveController = require('../controllers/rideActiveController');
 //ride preview 
 router.post('/preview', authenticateToken, ridePreviewController.previewRide);
 //request a ride
-router.post('/request', authenticateToken, rideRequestController.requestRide);
+router.post('/request', authenticateToken, (req, res) =>
+  rideRequestController.requestRide(req, res, req.app.get('io'))
+);
+
 //preview available rides
 router.get('/available', authenticateToken, verifyDriver, rideAvailableController.getAvailableRides);
 //accept a ride
-router.post('/accept', authenticateToken, verifyDriver, rideAcceptController.acceptRide);
+router.post('/accept', authenticateToken, verifyDriver, (req, res) =>
+  rideAcceptController.acceptRide(req, res, req.app.get('io'))
+);
+
 //driver rating display after accepting a ride
 router.get('/accepted-ride-details', authenticateToken, rideAcceptedDetailsController.getAcceptedRideDetails);
 //cancel a ride 
-router.post('/cancel', authenticateToken, rideCancelController.cancelRide);
+router.post('/cancel', authenticateToken, (req, res) =>
+  rideCancelController.cancelRide(req, res, req.app.get('io'))
+);
+
 //start ride
 router.post('/start', authenticateToken, verifyDriver, rideStartController.startRide);
 //payment

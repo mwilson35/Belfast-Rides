@@ -65,12 +65,23 @@ const DriverDashboard = () => {
   // Socket and geolocation: update driver location and check for arrival
   useEffect(() => {
     socketRef.current = io('http://localhost:5000');
+    console.log('Socket connected');
+  
+    return () => {
+      socketRef.current.disconnect();
+      console.log('Socket disconnected');
+    };
+  }, []);
+  
+  useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setDriverLocation(loc);
-        socketRef.current.emit('driverLocationUpdate', loc);
-
+  
+        // ONLY use existing socket
+        socketRef.current?.emit('driverLocationUpdate', loc);
+  
         if (riderLocation && acceptedRide && !arrivedPingSent) {
           const distance = getDistanceFromLatLonInMeters(
             loc.lat,
@@ -81,7 +92,7 @@ const DriverDashboard = () => {
           console.log('Distance to pickup:', distance);
           if (distance < 55) {
             setTimeout(() => {
-              socketRef.current.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
+              socketRef.current?.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
               setArrivedPingSent(true);
             }, 2000);
           }
@@ -90,11 +101,48 @@ const DriverDashboard = () => {
       (err) => console.error(err),
       { enableHighAccuracy: true }
     );
+  
     return () => {
       navigator.geolocation.clearWatch(watchId);
-      socketRef.current.disconnect();
     };
   }, [riderLocation, acceptedRide, arrivedPingSent]);
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;  
+    const handleCancel = ({ rideId }) => {
+      setAcceptedRide(prev => {
+        if (prev && prev.id === rideId) {
+          setRiderLocation(null);
+          setDestination(null);
+          setMessage('The rider cancelled the ride.');
+          return null;
+        }
+        return prev;
+      });
+    };
+  
+    socket.on('rideCancelledByRider', handleCancel);
+  
+    socket.on('newAvailableRide', (ride) => {
+      setAvailableRides((prev) => {
+        if (prev.some((r) => r.id === ride.id)) return prev;
+        return [...prev, ride];
+      });
+    });
+  
+    socket.on('removeRide', (rideId) => {
+      setAvailableRides((prev) => prev.filter((r) => r.id !== rideId));
+    });
+  
+    return () => {
+      socket.off('newAvailableRide');
+      socket.off('removeRide');
+      socket.off('rideCancelledByRider', handleCancel);
+    };
+  }, []);
+  
+  
+  
 
   // Route Drawing: fetch and update directions every 30 seconds
   useEffect(() => {

@@ -1,4 +1,6 @@
+
 const db = require('../db');
+
 
 exports.acceptRide = async (req, res) => {
   console.log('Accept endpoint hit');
@@ -28,11 +30,20 @@ exports.acceptRide = async (req, res) => {
           return res.status(404).json({ message: 'Ride not found or already accepted.' });
         }
 
-        // Emit driverAccepted event via Socket.IO
+        // Emit to sockets
         const io = req.app.get('io');
-        io.emit('driverAccepted', { rideId, driverId, message: 'Driver accepted the ride.' });
+        io.emit('driverAccepted', {
+          rideId,
+          driverId,
+          message: 'Driver accepted the ride.',
+        });
 
-        return res.json({ message: 'Ride accepted successfully.', rideId });
+        io.emit('removeRide', rideId); // 🧹 Tell all other drivers to ditch it
+
+        return res.json({
+          message: 'Ride accepted successfully.',
+          rideId,
+        });
       }
     );
   } catch (error) {

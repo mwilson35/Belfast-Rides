@@ -1,8 +1,8 @@
 const axios = require('axios');
 const db = require('../db');
-console.log('MAPBOX_TOKEN in backend:', process.env.MAPBOX_TOKEN);
 
-exports.requestRide = async (req, res) => {
+
+exports.requestRide = async (req, res, io) => {
   const { pickupLocation, destination } = req.body;
   const riderId = req.user.id;
   const userRole = req.user.role;
@@ -47,7 +47,6 @@ exports.requestRide = async (req, res) => {
     const farePerKm = 1.2;
     const estimatedFare = baseFare + distanceInKm * farePerKm;
 
-    // Wrap route.geometry in valid GeoJSON FeatureCollection
     const geojsonRoute = {
       type: 'FeatureCollection',
       features: [
@@ -58,6 +57,7 @@ exports.requestRide = async (req, res) => {
         }
       ]
     };
+
     db.query(
       "SELECT * FROM rides WHERE rider_id = ? AND status IN ('requested', 'accepted')",
       [riderId],
@@ -69,7 +69,7 @@ exports.requestRide = async (req, res) => {
         if (activeRides.length > 0) {
           return res.status(400).json({ message: 'You already have an active ride.' });
         }
-        
+
         db.query(
           `INSERT INTO rides 
             (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status, encoded_polyline, pickup_lat, pickup_lng, destination_lat, destination_lng) 
@@ -93,9 +93,28 @@ exports.requestRide = async (req, res) => {
               console.error('Database error:', err.message);
               return res.status(500).json({ message: 'Database error' });
             }
+
+            const ride = {
+              id: results.insertId,
+              pickup_location: pickupLocation,
+              destination,
+              rider_id: riderId,
+              distance: distanceInKm,
+              estimated_fare: estimatedFare,
+              status: 'requested',
+              pickup_lat: pickupLat,
+              pickup_lng: pickupLng,
+              destination_lat: destLat,
+              destination_lng: destLng,
+              encoded_polyline: geojsonRoute
+            };
+
+            // 🔥 Emit the ride to all connected drivers
+            io.emit('newAvailableRide', ride);
+
             res.status(201).json({
               message: 'Ride requested successfully',
-              rideId: results.insertId,
+              rideId: ride.id,
               distance: `${distanceInKm.toFixed(2)} km`,
               duration: `${Math.round(durationInSeconds / 60)} mins`,
               estimatedFare: `£${estimatedFare.toFixed(2)}`,
@@ -107,9 +126,8 @@ exports.requestRide = async (req, res) => {
             });
           }
         );
-      } // <-- This closes the SELECT callback
-    ); // <-- This closes the SELECT query call
-    
+      }
+    );
   } catch (error) {
     console.error('Full error stack:', error);
     res.status(500).json({ message: 'Error calculating ride route.' });

@@ -204,8 +204,9 @@ io.on('connection', (socket) => {
   });
   socket.on('rideCancelled', (data) => {
     console.log('rideCancelled event from driver:', data);
-    io.emit('rideCancelled', data);
+    io.emit('rideCancelledByRider', data); // ✅ now it matches frontend
   });
+  
   
   socket.on('disconnect', () => {
     console.log(`Client disconnected: ${socket.id}`);
