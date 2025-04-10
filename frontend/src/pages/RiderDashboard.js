@@ -141,6 +141,13 @@ const [activeRoute, setActiveRoute] = useState(null);
     
     socketRef.current.on('locationUpdate', (data) => {
       console.log('Raw driver location update:', data);
+        // Don't process location updates if no active ride or ride not accepted yet
+  const ride = activeRideRef.current;
+  if (!ride || ride.status === 'requested') {
+    console.log('Ignoring driver location update: no accepted ride yet.');
+    return;
+  }
+
     
       const lat = parseFloat(data.lat);
       const lng = parseFloat(data.lng);
@@ -195,6 +202,8 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
         setActiveRoute(null); // Clear active route state
         setRidePreview(null);
         setDriverLocation(null);
+localStorage.removeItem('driverLocation');
+
         setEta(null); // Clear the stale ETA
         
         // Clear persisted keys
@@ -217,10 +226,14 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
       notify('Your ride has been cancelled by the driver.');
       setActiveRide(null);
       setActiveRoute(null); // Clear the active route from state
+      setDriverLocation(null); // 👻 Remove the spooky leftover driver marker
       setEta(null); // Clear stale ETA data on ride cancellation
       handleClearPreview();
+    
       localStorage.removeItem('activeRoute'); // Clear the active route from localStorage
+      localStorage.removeItem('driverLocation'); // 🔥 Exorcise it from storage too
     });
+    
     
     
     
@@ -429,6 +442,8 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
       localStorage.removeItem('activeRoute');
       setRidePreview(null);
       setDriverLocation(null);
+localStorage.removeItem('driverLocation');
+
       const historyData = await fetchRideHistory();
       setRideHistory(historyData);
     } catch (error) {
@@ -443,34 +458,32 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
 
   const markers = [];
 
-  // If there's a preview ride, show those markers
-  if (ridePreview?.pickupLat && ridePreview?.pickupLng) {
-    markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
-  }
-  if (ridePreview?.destinationLat && ridePreview?.destinationLng) {
-    markers.push({ id: 'dropoff', lat: ridePreview.destinationLat, lng: ridePreview.destinationLng });
+  const rideHasDriver =
+    activeRide &&
+    ['accepted', 'arrived', 'in progress', 'completed'].includes(activeRide.status);
+  
+  if (!ridePreview && rideHasDriver && driverLocation) {
+    markers.push({ id: 'driver', ...driverLocation });
   }
   
-  // Always show driver location if available
-  if (driverLocation) {
-    markers.push(driverLocation);
+  if (ridePreview) {
+    if (ridePreview?.pickupLat && ridePreview?.pickupLng) {
+      markers.push({ id: 'pickup', lat: ridePreview.pickupLat, lng: ridePreview.pickupLng });
+    }
+    if (ridePreview?.destinationLat && ridePreview?.destinationLng) {
+      markers.push({ id: 'dropoff', lat: ridePreview.destinationLat, lng: ridePreview.destinationLng });
+    }
+  } else if (activeRide && activeRoute?.length) {
+    const [firstPoint] = activeRoute;
+    const lastPoint = activeRoute[activeRoute.length - 1];
+  
+    markers.push({ id: 'pickup', lat: firstPoint.lat, lng: firstPoint.lng });
+    markers.push({ id: 'dropoff', lat: lastPoint.lat, lng: lastPoint.lng });
   }
   
-  // If no preview is active, show active ride markers
-  if (!ridePreview && activeRide?.pickupLat && activeRide?.pickupLng) {
-    markers.push({
-      id: 'pickup',
-      lat: parseFloat(activeRide.pickupLat),
-      lng: parseFloat(activeRide.pickupLng)
-    });
-  }
-  if (!ridePreview && activeRide?.destinationLat && activeRide?.destinationLng) {
-    markers.push({
-      id: 'dropoff',
-      lat: parseFloat(activeRide.destinationLat),
-      lng: parseFloat(activeRide.destinationLng)
-    });
-  }
+  
+  
+  
   
   
   const TAB_LABELS = {

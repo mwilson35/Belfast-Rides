@@ -18,10 +18,10 @@ const InteractiveMap = ({
   const handleMapLoad = (map) => {
     mapRef.current = map;
   };
+
   useEffect(() => {
     console.log("InteractiveMap rendering with route:", route);
   }, [route]);
-  
 
   useEffect(() => {
     if (autoFit && mapRef.current && isValidRoute) {
@@ -33,7 +33,6 @@ const InteractiveMap = ({
     }
   }, [route, autoFit, isValidRoute]);
 
-  // New effect: force the map to re-center on the first route coordinate when the route changes.
   useEffect(() => {
     if (mapRef.current && isValidRoute) {
       mapRef.current.setCenter(route[0]);
@@ -47,37 +46,44 @@ const InteractiveMap = ({
       zoom={mapZoom}
       onLoad={handleMapLoad}
     >
-      {markers.map((marker, index) => (
-        <Marker
-          key={marker.id || index}
-          position={{ lat: marker.lat, lng: marker.lng }}
-        />
-      ))}
+      {markers.map((marker, index) => {
+  let iconUrl;
+  let label;
+
+  if (marker.id === 'pickup') {
+    iconUrl = 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+  } else if (marker.id === 'dropoff') {
+    iconUrl = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+  } else if (marker.id === 'driver') {
+    iconUrl = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+    label = {
+      text: 'Driver',
+      color: 'white',
+      fontSize: '12px',
+      fontWeight: 'bold'
+    };
+  }
+
+  return (
+    <Marker
+      key={marker.id || index}
+      position={{ lat: marker.lat, lng: marker.lng }}
+      icon={iconUrl ? { url: iconUrl, scaledSize: new window.google.maps.Size(40, 40) } : undefined}
+      label={label}
+    />
+  );
+})}
 
       {isValidRoute && (
-        <>
-          <Polyline
-            key={JSON.stringify(route)} // forces Polyline to fully re-render
-            path={route}
-            options={{
-              strokeColor: '#1E90FF',
-              strokeOpacity: 0.9,
-              strokeWeight: 4
-            }}
-          />
-          <Marker
-            position={route[0]}
-            icon={{
-              url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-            }}
-          />
-          <Marker
-            position={route[route.length - 1]}
-            icon={{
-              url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-            }}
-          />
-        </>
+        <Polyline
+          key={JSON.stringify(route)}
+          path={route}
+          options={{
+            strokeColor: '#1E90FF',
+            strokeOpacity: 0.9,
+            strokeWeight: 4
+          }}
+        />
       )}
     </GoogleMap>
   );
