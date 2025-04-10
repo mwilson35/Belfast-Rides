@@ -195,6 +195,7 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
         setActiveRoute(null); // Clear active route state
         setRidePreview(null);
         setDriverLocation(null);
+        setEta(null); // Clear the stale ETA
         
         // Clear persisted keys
         localStorage.removeItem('activeRoute');
@@ -208,6 +209,7 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
     
     
     
+    
   
     // Listener for ride cancellation:
     socketRef.current.on('rideCancelled', (data) => {
@@ -215,9 +217,11 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
       notify('Your ride has been cancelled by the driver.');
       setActiveRide(null);
       setActiveRoute(null); // Clear the active route from state
+      setEta(null); // Clear stale ETA data on ride cancellation
       handleClearPreview();
       localStorage.removeItem('activeRoute'); // Clear the active route from localStorage
     });
+    
     
     
     
