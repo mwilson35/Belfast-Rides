@@ -51,7 +51,10 @@ const [activeRoute, setActiveRoute] = useState(null);
   useEffect(() => { activeRideRef.current = activeRide; }, [activeRide]);
 
   const socketRef = useRef(null);
-
+  useEffect(() => {
+    localStorage.removeItem('activeRide'); // clear stale junk on first load
+  }, []);
+  
   useEffect(() => {
     const storedActiveRoute = localStorage.getItem('activeRoute');
     if (storedActiveRoute) {
@@ -101,7 +104,8 @@ const [activeRoute, setActiveRoute] = useState(null);
         if (activeRideData.status === 'accepted') {
           try {
             const enriched = await fetchAcceptedRideDetails(activeRideData.id);
-            setActiveRide(enriched);
+            setActiveRide(prev => ({ ...prev, ...enriched }));
+
             localStorage.setItem('activeRide', JSON.stringify(enriched));
           } catch {
             setActiveRide(activeRideData);
@@ -136,9 +140,21 @@ const [activeRoute, setActiveRoute] = useState(null);
     socketRef.current = require('socket.io-client')('http://localhost:5000');
     
     socketRef.current.on('locationUpdate', (data) => {
-      setDriverLocation({ id: 'driver', lat: data.lat, lng: data.lng });
-      localStorage.setItem('driverLocation', JSON.stringify({ lat: data.lat, lng: data.lng }));
+      console.log('Raw driver location update:', data);
+    
+      const lat = parseFloat(data.lat);
+      const lng = parseFloat(data.lng);
+    
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const coords = { id: 'driver', lat, lng };
+        console.log('Setting driver location:', coords);
+        setDriverLocation(coords);
+        localStorage.setItem('driverLocation', JSON.stringify(coords));
+      } else {
+        console.warn('Ignored bad driver location:', data);
+      }
     });
+    
   
     socketRef.current.on('driverAccepted', async (data) => {
       notify('Your ride has been accepted!');
@@ -148,7 +164,11 @@ const [activeRoute, setActiveRoute] = useState(null);
           (activeRideRef.current && (activeRideRef.current.rideId || activeRideRef.current.id));
         if (!rideId) return;
         const response = await api.get('/rides/accepted-ride-details', { params: { rideId } });
+        console.log("Accepted ride details response:", response.data);
+
         setActiveRide(response.data);
+localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overwrite clean
+
       } catch (error) {
         setActiveRide((prev) => (prev ? { ...prev, status: 'accepted' } : prev));
       }
@@ -214,51 +234,96 @@ const [activeRoute, setActiveRoute] = useState(null);
 
   useEffect(() => {
     let intervalId;
-    if (activeRide && driverLocation && destination) {
+  
+    if (
+      activeRide &&
+      driverLocation &&
+      ['accepted', 'in progress', 'arrived'].includes(activeRide.status)
+    ) {
+      let destCoords = null;
+  
+      // 💬 Let's log what we're working with
+      console.log('Checking destination for ETA:', {
+        activeRideDestination: activeRide?.destination,
+        destination,
+        destinationLat: activeRide?.destinationLat,
+        destinationLng: activeRide?.destinationLng
+      });
+  
+      if (
+        activeRide.destinationLat &&
+        activeRide.destinationLng &&
+        !isNaN(parseFloat(activeRide.destinationLat)) &&
+        !isNaN(parseFloat(activeRide.destinationLng))
+      ) {
+        destCoords = `${parseFloat(activeRide.destinationLat)},${parseFloat(activeRide.destinationLng)}`;
+      }
+       else if (
+        typeof destination === 'object' &&
+        destination.lat &&
+        destination.lng
+      ) {
+        destCoords = `${destination.lat},${destination.lng}`;
+      } else {
+        console.warn('Destination coords missing — injecting test fallback.');
+        destCoords = '51.5072,-0.1276'; // fallback: central-ish London
+      }
+  
       intervalId = setInterval(async () => {
         try {
+          console.log('ETA update:', {
+            origin: `${driverLocation.lat},${driverLocation.lng}`,
+            destination: destCoords,
+            rideStatus: activeRide.status
+          });
+  
           const response = await api.get('/get-directions', {
             params: {
               origin: `${driverLocation.lat},${driverLocation.lng}`,
-              destination,
+              destination: destCoords,
             },
           });
+  
           const duration = response.data.routes[0].legs[0].duration.text;
           setEta(duration);
         } catch (error) {
           console.error('Error fetching ETA:', error);
         }
-      }, 30000);
+      }, 5000);
     }
+  
     return () => intervalId && clearInterval(intervalId);
   }, [activeRide, driverLocation, destination]);
+  
+  
+  
+  
 
   useEffect(() => {
     const pollActiveRideStatus = async () => {
       try {
         const activeRideData = await fetchActiveRide();
         if (!activeRideData) return;
+        const currentRide = activeRideRef.current || {};
   
-        // If the status is 'accepted' and we already have enriched driver details, do nothing.
-        if (
-          activeRideData.status === 'accepted' &&
-          activeRideRef.current &&
-          activeRideRef.current.driver_id
-        ) {
-          return;
+        // Always merge driver details if present in current state but missing in the new API response.
+        if (currentRide.driver_id && !activeRideData.driver_id) {
+          activeRideData.driver_id = currentRide.driver_id;
+          activeRideData.driverName = currentRide.driverName;
+          activeRideData.driverPhone = currentRide.driverPhone;
+          // Merge any additional driver fields as needed.
         }
   
-        if (activeRideData?.status === 'arrived') {
-          setActiveRide((prev) => {
-            if (prev?.status !== 'arrived') {
-              notify('Your driver has arrived!');
-              return activeRideData;
-            }
-            return prev;
-          });
-        } else {
-          setActiveRide(activeRideData);
+        // If status changed to 'arrived', notify.
+        if (activeRideData.status === 'arrived' && currentRide.status !== 'arrived') {
+          notify('Your driver has arrived!');
         }
+  
+        setActiveRide(prev => ({
+          ...prev,
+          ...activeRideData,
+        }));
+        
       } catch (error) {
         console.error('Error polling active ride status:', error);
       }
@@ -266,6 +331,8 @@ const [activeRoute, setActiveRoute] = useState(null);
     const intervalId = setInterval(pollActiveRideStatus, 10000);
     return () => clearInterval(intervalId);
   }, []);
+  
+  
   
   
 
@@ -391,11 +458,20 @@ const [activeRoute, setActiveRoute] = useState(null);
   
   // If no preview is active, show active ride markers
   if (!ridePreview && activeRide?.pickupLat && activeRide?.pickupLng) {
-    markers.push({ id: 'pickup', lat: activeRide.pickupLat, lng: activeRide.pickupLng });
+    markers.push({
+      id: 'pickup',
+      lat: parseFloat(activeRide.pickupLat),
+      lng: parseFloat(activeRide.pickupLng)
+    });
   }
   if (!ridePreview && activeRide?.destinationLat && activeRide?.destinationLng) {
-    markers.push({ id: 'dropoff', lat: activeRide.destinationLat, lng: activeRide.destinationLng });
+    markers.push({
+      id: 'dropoff',
+      lat: parseFloat(activeRide.destinationLat),
+      lng: parseFloat(activeRide.destinationLng)
+    });
   }
+  
   
   const TAB_LABELS = {
     rideRequest: 'Request a Ride',

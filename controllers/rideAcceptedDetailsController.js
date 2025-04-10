@@ -6,8 +6,10 @@ exports.getAcceptedRideDetails = (req, res) => {
   
   // Verify that the ride belongs to the rider and is in an active status.
   const rideQuery = `
-    SELECT * FROM rides 
-    WHERE id = ? AND rider_id = ? AND status IN ('accepted', 'in_progress', 'completed')
+SELECT id, pickup_location, destination, pickup_lat, pickup_lng, destination_lat, destination_lng, driver_id, rider_id, status
+FROM rides 
+WHERE id = ? AND rider_id = ? AND status IN ('accepted', 'in_progress', 'completed')
+
   `;
   
   db.query(rideQuery, [rideId, riderId], (err, rides) => {
@@ -49,6 +51,20 @@ exports.getAcceptedRideDetails = (req, res) => {
             // Attach driver info and rating to the ride object.
             ride.driverRating = ratingResults[0];
             ride.driverDetails = driver;
+            const renameKeys = (obj, keyMap) =>
+              Object.keys(keyMap).reduce((acc, key) => {
+                acc[keyMap[key]] = obj[key];
+                return acc;
+              }, {});
+            
+            Object.assign(ride, renameKeys(ride, {
+              destination_lat: 'destinationLat',
+              destination_lng: 'destinationLng',
+              pickup_lat: 'pickupLat',
+              pickup_lng: 'pickupLng'
+            }));
+            console.log('Final ride object sent to frontend:', ride);
+
             res.json(ride);
           }
         );
