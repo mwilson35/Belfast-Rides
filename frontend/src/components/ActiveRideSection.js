@@ -23,7 +23,10 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
       <h2>Active Ride</h2>
       <p><strong>Ride ID:</strong> {activeRide.rideId || activeRide.id}</p>
       <p><strong>Status:</strong> {activeRide.status || 'requested'}</p>
-      {eta && <p><strong>ETA:</strong> {eta}</p>}
+      {eta && <p><strong>
+  ETA to {activeRide.status === 'in progress' ? 'destination' : 'pickup'}:
+</strong> {eta}
+</p>}
       <RideStatusTimeline status={activeRide.status || 'requested'} />
 
       <div className="progress-bar-container">

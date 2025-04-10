@@ -238,50 +238,32 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
     if (
       activeRide &&
       driverLocation &&
-      ['accepted', 'in progress', 'arrived'].includes(activeRide.status)
+      ['accepted', 'arrived', 'in progress'].includes(activeRide.status)
     ) {
-      let destCoords = null;
+      let origin, destCoords, destinationLabel;
   
-      // 💬 Let's log what we're working with
-      console.log('Checking destination for ETA:', {
-        activeRideDestination: activeRide?.destination,
-        destination,
-        destinationLat: activeRide?.destinationLat,
-        destinationLng: activeRide?.destinationLng
-      });
-  
-      if (
-        activeRide.destinationLat &&
-        activeRide.destinationLng &&
-        !isNaN(parseFloat(activeRide.destinationLat)) &&
-        !isNaN(parseFloat(activeRide.destinationLng))
-      ) {
+      if (activeRide.status === 'in progress') {
+        // ETA to destination
+        origin = `${driverLocation.lat},${driverLocation.lng}`;
         destCoords = `${parseFloat(activeRide.destinationLat)},${parseFloat(activeRide.destinationLng)}`;
-      }
-       else if (
-        typeof destination === 'object' &&
-        destination.lat &&
-        destination.lng
-      ) {
-        destCoords = `${destination.lat},${destination.lng}`;
+        destinationLabel = 'destination';
       } else {
-        console.warn('Destination coords missing — injecting test fallback.');
-        destCoords = '51.5072,-0.1276'; // fallback: central-ish London
+        // ETA to pickup
+        origin = `${driverLocation.lat},${driverLocation.lng}`;
+        destCoords = `${parseFloat(activeRide.pickupLat)},${parseFloat(activeRide.pickupLng)}`;
+        destinationLabel = 'pickup';
       }
   
       intervalId = setInterval(async () => {
         try {
-          console.log('ETA update:', {
-            origin: `${driverLocation.lat},${driverLocation.lng}`,
+          console.log(`ETA update (${destinationLabel}):`, {
+            origin,
             destination: destCoords,
-            rideStatus: activeRide.status
+            rideStatus: activeRide.status,
           });
   
           const response = await api.get('/get-directions', {
-            params: {
-              origin: `${driverLocation.lat},${driverLocation.lng}`,
-              destination: destCoords,
-            },
+            params: { origin, destination: destCoords },
           });
   
           const duration = response.data.routes[0].legs[0].duration.text;
@@ -293,7 +275,8 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
     }
   
     return () => intervalId && clearInterval(intervalId);
-  }, [activeRide, driverLocation, destination]);
+  }, [activeRide, driverLocation]);
+  
   
   
   
