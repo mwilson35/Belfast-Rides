@@ -140,49 +140,6 @@ const DriverDashboard = () => {
       socket.off('rideCancelledByRider', handleCancel);
     };
   }, []);
-  
-  
-  
-
-  // Route Drawing: fetch and update directions every 30 seconds
-  useEffect(() => {
-    let intervalId;
-    const fetchDirections = async () => {
-      if (!driverLocation) return;
-      const token = process.env.REACT_APP_MAPBOX_TOKEN;
-      let url;
-      // If ride has started, show driver -> destination route
-      if (acceptedRide && acceptedRide.status === 'in_progress' && destination) {
-        url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${destination.lng},${destination.lat}?access_token=${token}&geometries=geojson`;
-      }
-      // Otherwise, show driver -> pickup -> destination route
-      else if (driverLocation && riderLocation && destination) {
-        url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLocation.lng},${driverLocation.lat};${riderLocation.lng},${riderLocation.lat};${destination.lng},${destination.lat}?access_token=${token}&geometries=geojson`;
-      } else {
-        return;
-      }
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.routes && data.routes.length) {
-          const geometry = data.routes[0].geometry;
-          const geojsonRoute =
-            geometry.type === 'LineString'
-              ? { type: 'Feature', geometry, properties: {} }
-              : geometry;
-          setDirections(geojsonRoute);
-        } else {
-          console.warn('No directions found.');
-        }
-      } catch (err) {
-        console.error('Error fetching directions:', err);
-      }
-    };
-    fetchDirections();
-    intervalId = setInterval(fetchDirections, 30000);
-    return () => clearInterval(intervalId);
-  }, [driverLocation, riderLocation, destination, acceptedRide]);
-
   const handleAcceptRide = async (rideId) => {
     try {
       const res = await api.post('/rides/accept', { rideId });
@@ -192,21 +149,53 @@ const DriverDashboard = () => {
         setMessage('Unexpected response from server.');
         console.warn('Unexpected ride accept response:', res);
       }
-      const ride = availableRides.find((r) => r.id === rideId);
-      setAcceptedRide(ride);
+  
+      // The magic: fetch the full ride from the backend
+      const response = await api.get(`/rides/accepted-ride-details?rideId=${rideId}`)
+
+      const fullRide = response.data;
+  
+      setAcceptedRide(fullRide); // now includes decoded_route
       setArrivedPingSent(false);
-      if (ride?.pickup_location) {
-        setRiderLocation(await geocodeAddress(ride.pickup_location));
+  
+      if (fullRide.pickup_lat && fullRide.pickup_lng) {
+        setRiderLocation({ lat: fullRide.pickup_lat, lng: fullRide.pickup_lng });
       }
-      if (ride?.destination) {
-        setDestination(await geocodeAddress(ride.destination));
+      if (fullRide.destination_lat && fullRide.destination_lng) {
+        setDestination({ lat: fullRide.destination_lat, lng: fullRide.destination_lng });
       }
+  
       fetchAvailableRides();
     } catch (err) {
       console.error('Error accepting ride:', err?.response?.data || err.message || err);
       setMessage('Failed to accept ride.');
     }
   };
+  
+  
+  
+
+  // Route Drawing: fetch and update directions every 30 seconds
+  useEffect(() => {
+    if (acceptedRide?.decoded_route) {
+      const route = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: acceptedRide.decoded_route.map(point => [point.lng, point.lat])
+            },
+            properties: {}
+          }
+        ]
+      };
+      setDirections(route);
+    }
+  }, [acceptedRide]);
+  
+  
 
   const handleStartRide = async () => {
     if (!acceptedRide) return;

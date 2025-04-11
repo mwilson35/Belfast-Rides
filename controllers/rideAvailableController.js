@@ -1,7 +1,6 @@
 const db = require('../db');
 
 exports.getAvailableRides = (req, res) => {
-  // This middleware is intended for drivers only.
   if (req.user.role !== 'driver') {
     return res.status(403).json({ message: 'Forbidden: Only drivers can view available rides.' });
   }
