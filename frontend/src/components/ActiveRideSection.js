@@ -57,12 +57,13 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
         Cancel Ride
       </button>
 
-      {(status === 'accepted' || status === 'in progress') && activeRide.driverDetails && (
-        <DriverDetails 
-          driverDetails={activeRide.driverDetails} 
-          driverRating={activeRide.driverRating} 
-        />
-      )}
+      {(['accepted', 'arrived', 'in progress'].includes(status)) && activeRide.driverDetails && (
+  <DriverDetails 
+    driverDetails={activeRide.driverDetails} 
+    driverRating={activeRide.driverRating} 
+  />
+)}
+
     </section>
   );
 };
