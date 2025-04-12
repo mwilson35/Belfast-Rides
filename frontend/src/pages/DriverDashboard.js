@@ -195,7 +195,26 @@ const DriverDashboard = () => {
     }
   }, [acceptedRide]);
   
-  
+  // Place inside DriverDashboard.js, after your existing route drawing useEffect
+useEffect(() => {
+  const interval = setInterval(() => {
+    if (acceptedRide?.decoded_route) {
+      setDirections({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: acceptedRide.decoded_route.map(p => [p.lng, p.lat])
+          }
+        }]
+      });
+    }
+  }, 15000);
+
+  return () => clearInterval(interval);
+}, [acceptedRide]);
+
 
   const handleStartRide = async () => {
     if (!acceptedRide) return;
@@ -210,30 +229,41 @@ const DriverDashboard = () => {
     }
   };
 
-  const handleCompleteRide = async () => {
-    if (!acceptedRide) return;
-    try {
-      const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
-      setMessage(response.data.message || 'Ride completed successfully');
-      setAcceptedRide(null);
-    } catch (error) {
-      console.error('Error completing ride:', error);
-      setMessage('Failed to complete ride.');
-    }
-  };
+// CLEAR THE MAP properly when ride is complete
+const clearRideState = () => {
+  setAcceptedRide(null);
+  setDirections(null);
+  setRiderLocation(null);
+  setDestination(null);
+  setArrivedPingSent(false);
+};
 
-  const handleCancelRide = async () => {
-    try {
-      const response = await api.post('/rides/cancel', { rideId: acceptedRide.id });
-      setMessage(response.data.message || 'Ride cancelled successfully');
-      // Emit event to notify rider of cancellation
-      socketRef.current.emit('rideCancelled', { rideId: acceptedRide.id });
-      setAcceptedRide(null);
-    } catch (error) {
-      console.error('Error cancelling ride:', error);
-      setMessage('Failed to cancel ride.');
-    }
-  };
+const handleCompleteRide = async () => {
+  if (!acceptedRide) return;
+  try {
+    const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
+    setMessage(response.data.message || 'Ride completed successfully');
+    clearRideState();  // Clear map states
+    fetchAvailableRides(); // Refresh available rides
+  } catch (error) {
+    console.error('Error completing ride:', error);
+    setMessage('Failed to complete ride.');
+  }
+};
+
+const handleCancelRide = async () => {
+  try {
+    const response = await api.post('/rides/cancel', { rideId: acceptedRide.id });
+    setMessage(response.data.message || 'Ride cancelled successfully');
+    socketRef.current.emit('rideCancelled', { rideId: acceptedRide.id });
+    clearRideState();  // Clear map states
+    fetchAvailableRides(); // Refresh available rides
+  } catch (error) {
+    console.error('Error cancelling ride:', error);
+    setMessage('Failed to cancel ride.');
+  }
+};
+
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -304,7 +334,13 @@ const DriverDashboard = () => {
           </div>
           
           {/* Tab Content */}
-          {message && <div className="alert alert-info">{message}</div>}
+         
+{message && (
+  <div className="alert">
+    {message}
+  </div>
+)}
+
           {activeTab === 'rides' && (
             !acceptedRide ? (
               <AvailableRidesList rides={availableRides} onAcceptRide={handleAcceptRide} />
