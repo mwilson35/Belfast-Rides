@@ -20,13 +20,14 @@ const DriverInteractiveMap = ({
   useEffect(() => {
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/navigation-day-v1', // professional driver style
+      style: 'mapbox://styles/mapbox/light-v11', // ✅ No incidents or traffic layer clearly
       center: center ? [center.lng, center.lat] : [-5.9301, 54.5973],
       zoom,
       pitch: 60,
       bearing: 0,
       antialias: true,
     });
+    
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
