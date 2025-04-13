@@ -208,58 +208,38 @@ const getRouteToPickup = async (from, to) => {
   
 
   // Route Drawing: fetch and update directions every 30 seconds
-  useEffect(() => {
-    if (acceptedRide?.decoded_route) {
-      const route = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: acceptedRide.decoded_route.map(point => [point.lng, point.lat])
-            },
-            properties: {}
-          }
-        ]
-      };
-      setDirections(route);
-    }
-  }, [acceptedRide]);
+
   
-  // Place inside DriverDashboard.js, after your existing route drawing useEffect
-useEffect(() => {
-  const interval = setInterval(() => {
-    if (acceptedRide?.decoded_route) {
+
+
+
+const handleStartRide = async () => {
+  if (!acceptedRide) return;
+  try {
+    const response = await api.post('/rides/start', { rideId: acceptedRide.id });
+    setMessage(response.data.message || 'Ride started successfully');
+    setRiderLocation(null);
+    setAcceptedRide((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
+
+    // 🧭 Set main route only now, AFTER ride starts
+    if (acceptedRide.decoded_route) {
       setDirections({
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
           geometry: {
             type: 'LineString',
-            coordinates: acceptedRide.decoded_route.map(p => [p.lng, p.lat])
+            coordinates: acceptedRide.decoded_route.map(({ lat, lng }) => [lng, lat]),
           }
         }]
       });
     }
-  }, 15000);
+  } catch (error) {
+    console.error('Error starting ride:', error);
+    setMessage('Failed to start ride.');
+  }
+};
 
-  return () => clearInterval(interval);
-}, [acceptedRide]);
-
-
-  const handleStartRide = async () => {
-    if (!acceptedRide) return;
-    try {
-      const response = await api.post('/rides/start', { rideId: acceptedRide.id });
-      setMessage(response.data.message || 'Ride started successfully');
-      setRiderLocation(null);
-      setAcceptedRide((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
-    } catch (error) {
-      console.error('Error starting ride:', error);
-      setMessage('Failed to start ride.');
-    }
-  };
 
 // CLEAR THE MAP properly when ride is complete
 const clearRideState = () => {
@@ -299,16 +279,44 @@ const handleCancelRide = async () => {
 
   // Fetch profile data on mount
   useEffect(() => {
-    const fetchProfile = async () => {
+    const checkForOngoingRide = async () => {
       try {
-        const res = await api.get('/users/profile');
-        setProfile(res.data);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+        const res = await api.get('/rides/accepted-ride-details'); // Auth-aware
+        if (res.data && res.data.status !== 'completed' && res.data.status !== 'cancelled') {
+          const ride = res.data;
+          setAcceptedRide(ride);
+          setArrivedPingSent(false);
+  
+          if (ride.pickup_lat && ride.pickup_lng) {
+            setRiderLocation({ lat: ride.pickup_lat, lng: ride.pickup_lng });
+          }
+          if (ride.destination_lat && ride.destination_lng) {
+            setDestination({ lat: ride.destination_lat, lng: ride.destination_lng });
+          }
+  
+          if (ride.status === 'in_progress' && ride.decoded_route) {
+            setDirections({
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: ride.decoded_route.map(p => [p.lng, p.lat]),
+                  },
+                },
+              ],
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('No active ride to restore or error fetching it.', err);
       }
     };
-    fetchProfile();
+  
+    checkForOngoingRide();
   }, []);
+  
 
   // Prepare markers for the map
   const markers = [];
