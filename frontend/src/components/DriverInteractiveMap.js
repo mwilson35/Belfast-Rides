@@ -75,16 +75,18 @@ useEffect(() => {
   // Directions (Clear route with responsive update)
   useEffect(() => {
     if (!mapRef.current) return;
-
+  
+    const map = mapRef.current;
+  
     const addRouteLayer = () => {
-      if (mapRef.current.getSource('route')) {
-        mapRef.current.getSource('route').setData(directions);
+      if (map.getSource('route')) {
+        map.getSource('route').setData(directions);
       } else {
-        mapRef.current.addSource('route', {
+        map.addSource('route', {
           type: 'geojson',
           data: directions,
         });
-        mapRef.current.addLayer({
+        map.addLayer({
           id: 'route',
           type: 'line',
           source: 'route',
@@ -97,15 +99,20 @@ useEffect(() => {
         });
       }
     };
-
+  
     if (directions) {
-      if (!mapRef.current.isStyleLoaded()) {
-        mapRef.current.once('load', addRouteLayer);
+      if (!map.isStyleLoaded()) {
+        map.once('load', addRouteLayer);
       } else {
         addRouteLayer();
       }
+    } else {
+      // 🔥 THIS is the missing piece: remove the route if directions becomes null
+      if (map.getLayer('route')) map.removeLayer('route');
+      if (map.getSource('route')) map.removeSource('route');
     }
   }, [directions]);
+  
 
   // Auto-fit route and markers responsively
   useEffect(() => {

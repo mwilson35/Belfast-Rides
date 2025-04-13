@@ -192,29 +192,48 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
       setActiveRide((prev) => (prev ? { ...prev, status: 'in progress' } : prev));
     });
   
-    socketRef.current.on('rideCompleted', (data) => {
+    socketRef.current.on('rideCompleted', async (data) => {
+      console.log('[SOCKET] Received rideCompleted payload:', data);
+    
       notify('Your ride is complete!');
-      const rideDetails = activeRideRef.current || data;
-      setRideSummary(rideDetails);
+    
+      try {
+        const rideId = data.rideId || (activeRideRef.current?.id ?? activeRideRef.current?.rideId);
+        if (!rideId) throw new Error('Missing ride ID');
+    
+        setRideSummary({
+          ...data,
+          id: data.rideId || data.id, // Normalize so the modal doesn't throw a hissy fit
+        });
+      } catch (err) {
+        console.warn('Could not fetch completed ride summary. Falling back.');
+        const fallback = activeRideRef.current || data || {};
+        setRideSummary({
+          ...fallback,
+          id: fallback.rideId || fallback.id || null,
+        });
+      }
+    
       setShowRideSummaryModal(true);
+    
       setTimeout(() => {
         setActiveRide(null);
-        setActiveRoute(null); // Clear active route state
+        setActiveRoute(null);
         setRidePreview(null);
         setDriverLocation(null);
-localStorage.removeItem('driverLocation');
-
-        setEta(null); // Clear the stale ETA
-        
-        // Clear persisted keys
+        setEta(null);
+    
+        localStorage.removeItem('driverLocation');
         localStorage.removeItem('activeRoute');
         localStorage.removeItem('ridePreview');
-        
+    
         fetchRideHistory().then(setRideHistory).catch(() =>
           notify('Failed to load ride history.')
         );
       }, 500);
     });
+    
+    
     
     
     
@@ -602,10 +621,17 @@ localStorage.removeItem('driverLocation');
           ride={rideSummary}
           onClose={() => setShowRideSummaryModal(false)}
           onProceedToRating={() => {
+            console.log('[DEBUG] Ride summary before rating:', rideSummary);
+            if (!rideSummary?.id || !rideSummary?.driver_id) {
+              alert("Ride data is incomplete. Cannot proceed to rating.");
+              return;
+            }
+          
             setCurrentRideForRating(rideSummary);
             setShowRideSummaryModal(false);
             setShowRatingModal(true);
           }}
+          
         />
       )}
       {showRatingModal && currentRideForRating && (

@@ -90,17 +90,30 @@ exports.completeRide = (req, res) => {
                 // Emit rideCompleted event via Socket.IO with full ride details
                 const io = req.app.get('io'); 
                 if (io) {
-                  io.emit('rideCompleted', {
-                    rideId,
-                    driver_id: ride.driver_id,
-                    fare, // calculated fare
-                    pickup_location: ride.pickup_location,
-                    destination: ride.destination,
-                    created_at: ride.created_at,
-                    distance: ride.distance,
-                    estimated_fare: ride.estimated_fare,
-                    message: 'Your ride is complete'
+                  db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, [updatedRide]) => {
+                    if (err || !updatedRide) {
+                      console.error('Error re-fetching ride for socket emit:', err);
+                      return;
+                    }
+                    console.log('[EMIT] rideCompleted:', {
+                      rideId: updatedRide.id,
+                      distance: updatedRide.distance,
+                      created_at: updatedRide.created_at
+                    });
+                    
+                    io.emit('rideCompleted', {
+                      rideId: updatedRide.id,
+                      driver_id: updatedRide.driver_id,
+                      fare: updatedRide.fare,
+                      pickup_location: updatedRide.pickup_location,
+                      destination: updatedRide.destination,
+                      created_at: updatedRide.created_at,
+                      distance: updatedRide.distance,
+                      estimated_fare: updatedRide.estimated_fare,
+                      message: 'Your ride is complete'
+                    });
                   });
+                  
                   console.log('Emitted rideCompleted event with full details');
                 } else {
                   console.error('Socket.IO instance not found');

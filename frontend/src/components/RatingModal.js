@@ -10,15 +10,23 @@ const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
 
   const handleSubmit = async () => {
     try {
-      // Submit the rating along with the tip (defaulting to 0 if not provided)
+      console.log('[DEBUG] Submitting rating:', {
+        rideId,
+        rateeId,
+        rating,
+        review,
+        tip: tip || 0
+      });
+  
       await api.post('/ratings', { rideId, rateeId, rating, review, tip: tip || 0 });
       onRatingSubmitted();
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error('[ERROR] Rating submission failed:', err);
       setError('Error submitting rating. Please try again.');
     }
   };
+  
 
   return (
     <div style={{
