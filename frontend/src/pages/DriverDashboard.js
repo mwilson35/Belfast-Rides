@@ -9,6 +9,7 @@ import ProfileSection from '../components/ProfileSection';
 import DriverDocumentUploads from '../components/DriverDocumentUploads';
 import ChatBox from '../components/ChatBox';
 import '../styles/DriverDashboard.css';
+import polyline from '@mapbox/polyline';
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -25,16 +26,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-const geocodeAddress = async (address) => {
-  const token = process.env.REACT_APP_MAPBOX_TOKEN;
-  const response = await fetch(
-    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}`
-  );
-  const data = await response.json();
-  if (!data.features || !data.features.length) throw new Error('No geocoding results');
-  const [lng, lat] = data.features[0].center;
-  return { lat, lng };
-};
+
 
 const DriverDashboard = () => {
   const [availableRides, setAvailableRides] = useState([]);
@@ -154,19 +146,24 @@ const DriverDashboard = () => {
         console.warn('Unexpected ride accept response:', res);
       }
   
-      // The magic: fetch the full ride from the backend
-      const response = await api.get(`/rides/accepted-ride-details?rideId=${rideId}`)
-
+      const response = await api.get(`/rides/accepted-ride-details?rideId=${rideId}`);
       const fullRide = response.data;
   
       setAcceptedRide(fullRide); // now includes decoded_route
       setArrivedPingSent(false);
   
+      let pickup = null;
       if (fullRide.pickup_lat && fullRide.pickup_lng) {
-        setRiderLocation({ lat: fullRide.pickup_lat, lng: fullRide.pickup_lng });
+        pickup = { lat: fullRide.pickup_lat, lng: fullRide.pickup_lng };
+        setRiderLocation(pickup);
       }
       if (fullRide.destination_lat && fullRide.destination_lng) {
         setDestination({ lat: fullRide.destination_lat, lng: fullRide.destination_lng });
+      }
+  
+      // 🧭 GET ROUTE TO PICKUP POINT
+      if (pickup && driverLocation) {
+        getRouteToPickup(driverLocation, pickup);
       }
   
       fetchAvailableRides();
@@ -176,6 +173,37 @@ const DriverDashboard = () => {
     }
   };
   
+  
+
+const getRouteToPickup = async (from, to) => {
+  try {
+    const response = await api.get('/get-directions', {
+      params: {
+        origin: `${from.lat},${from.lng}`,
+        destination: `${to.lat},${to.lng}`,
+      },
+    });
+
+    const encoded = response.data.routes[0].overview_polyline.points;
+    const decoded = polyline.decode(encoded).map(([lat, lng]) => ({ lat, lng }));
+
+    setDirections({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: decoded.map(({ lat, lng }) => [lng, lat]),
+          },
+        },
+      ],
+    });
+  } catch (err) {
+    console.error('Failed to get route to pickup:', err);
+  }
+};
+
   
   
 

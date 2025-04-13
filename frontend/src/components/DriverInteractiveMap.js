@@ -101,11 +101,34 @@ useEffect(() => {
     };
   
     if (directions) {
+      const tryAddRoute = () => {
+        if (!map.getSource('route')) {
+          map.addSource('route', {
+            type: 'geojson',
+            data: directions,
+          });
+          map.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': '#1db7dd',
+              'line-width': 6,
+              'line-opacity': 0.8,
+            },
+          });
+        } else {
+          map.getSource('route').setData(directions);
+        }
+      };
+      
       if (!map.isStyleLoaded()) {
-        map.once('load', addRouteLayer);
+        map.once('styledata', tryAddRoute); // better than 'load'
       } else {
-        addRouteLayer();
+        tryAddRoute();
       }
+      
     } else {
       // 🔥 THIS is the missing piece: remove the route if directions becomes null
       if (map.getLayer('route')) map.removeLayer('route');
