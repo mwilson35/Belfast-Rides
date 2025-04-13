@@ -50,6 +50,8 @@ const DriverDashboard = () => {
 
   // NEW: Declare socketRef to store the socket instance
   const socketRef = useRef(null);
+  const acceptedRideRef = useRef(null); // ← YOU FORGOT THIS GUY
+
 
   // Fetch available rides on mount
   const fetchAvailableRides = () => {
@@ -107,18 +109,18 @@ const DriverDashboard = () => {
     };
   }, [riderLocation, acceptedRide, arrivedPingSent]);
   useEffect(() => {
+    acceptedRideRef.current = acceptedRide;
+  }, [acceptedRide]);
+  
+  useEffect(() => {
     const socket = socketRef.current;
-    if (!socket) return;  
+    if (!socket) return;
+  
     const handleCancel = ({ rideId }) => {
-      setAcceptedRide(prev => {
-        if (prev && prev.id === rideId) {
-          setRiderLocation(null);
-          setDestination(null);
-          setMessage('The rider cancelled the ride.');
-          return null;
-        }
-        return prev;
-      });
+      if (acceptedRideRef.current?.id === rideId) {
+        clearRideState();
+        setMessage('The rider cancelled the ride.');
+      }
     };
   
     socket.on('rideCancelledByRider', handleCancel);
@@ -139,7 +141,9 @@ const DriverDashboard = () => {
       socket.off('removeRide');
       socket.off('rideCancelledByRider', handleCancel);
     };
-  }, []);
+  }, []); // ← no more `[acceptedRide]` needed
+  
+  
   const handleAcceptRide = async (rideId) => {
     try {
       const res = await api.post('/rides/accept', { rideId });
