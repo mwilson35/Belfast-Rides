@@ -10,6 +10,10 @@ import DriverDocumentUploads from '../components/DriverDocumentUploads';
 import ChatBox from '../components/ChatBox';
 import '../styles/DriverDashboard.css';
 import polyline from '@mapbox/polyline';
+import DriverRideHistory from '../components/DriverRideHistory';
+
+
+
 
 // Helper: Calculate distance (in meters) between two lat/lng points using the Haversine formula.
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
@@ -30,6 +34,8 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 
 const DriverDashboard = () => {
   const [availableRides, setAvailableRides] = useState([]);
+ 
+
   const [message, setMessage] = useState('');
   const [driverLocation, setDriverLocation] = useState(null);
   const [riderLocation, setRiderLocation] = useState(null);
@@ -38,6 +44,7 @@ const DriverDashboard = () => {
   const [acceptedRide, setAcceptedRide] = useState(null);
   const [arrivedPingSent, setArrivedPingSent] = useState(false);
   const [activeTab, setActiveTab] = useState('rides');
+
   const [profile, setProfile] = useState(null);
 
   // NEW: Declare socketRef to store the socket instance
@@ -103,6 +110,18 @@ const DriverDashboard = () => {
   useEffect(() => {
     acceptedRideRef.current = acceptedRide;
   }, [acceptedRide]);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/users/profile'); // Or wherever your endpoint is
+        setProfile(res.data);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      }
+    };
+  
+    fetchProfile();
+  }, []);
   
   useEffect(() => {
     const socket = socketRef.current;
@@ -341,45 +360,45 @@ const handleCancelRide = async () => {
         <div className="ride-requests-panel">
           {/* Tab Header */}
           <div className="tabs">
-            <button 
-              className={activeTab === 'rides' ? 'active' : ''}
-              onClick={() => setActiveTab('rides')}
-            >
-              Available Rides
-            </button>
-            <button 
-              className={activeTab === 'earnings' ? 'active' : ''}
-              onClick={() => setActiveTab('earnings')}
-            >
-              Earnings
-            </button>
-            <button 
-              className={activeTab === 'documents' ? 'active' : ''}
-              onClick={() => setActiveTab('documents')}
-            >
-              Documents
-            </button>
-            <button 
-              className={activeTab === 'profile' ? 'active' : ''}
-              onClick={() => setActiveTab('profile')}
-            >
-              Profile
-            </button>
-            <button 
-              className={activeTab === 'chat' ? 'active' : ''}
-              onClick={() => setActiveTab('chat')}
-            >
-              Chat
-            </button>
-          </div>
-          
-          {/* Tab Content */}
-         
-{message && (
-  <div className="alert">
-    {message}
-  </div>
-)}
+  <button 
+    className={activeTab === 'rides' ? 'active' : ''}
+    onClick={() => setActiveTab('rides')}
+  >
+    Available Rides
+  </button>
+  <button 
+    className={activeTab === 'earnings' ? 'active' : ''}
+    onClick={() => setActiveTab('earnings')}
+  >
+    Earnings
+  </button>
+  <button 
+    className={activeTab === 'documents' ? 'active' : ''}
+    onClick={() => setActiveTab('documents')}
+  >
+    Documents
+  </button>
+  <button 
+    className={activeTab === 'history' ? 'active' : ''}
+    onClick={() => setActiveTab('history')}
+  >
+    History
+  </button>
+  <button 
+    className={activeTab === 'profile' ? 'active' : ''}
+    onClick={() => setActiveTab('profile')}
+  >
+    Profile
+  </button>
+  <button 
+    className={activeTab === 'chat' ? 'active' : ''}
+    onClick={() => setActiveTab('chat')}
+  >
+    Chat
+  </button>
+</div>
+
+
 
           {activeTab === 'rides' && (
             !acceptedRide ? (
@@ -411,18 +430,29 @@ const handleCancelRide = async () => {
           {activeTab === 'earnings' && (
             <Earnings />
           )}
+{activeTab === 'history' && (
+  <section className="ride-history-section">
+    <h2>Your Ride History</h2>
+    <DriverRideHistory />
+  </section>
+)}
+
+
           {activeTab === 'documents' && (
             <section className="documents-section">
               <h2>Your Documents</h2>
               <DriverDocumentUploads />
             </section>
           )}
-          {activeTab === 'profile' && (
-            <section className="profile-section">
-              <h2>Your Profile</h2>
-              <ProfileSection profile={profile} />
-            </section>
-          )}
+{activeTab === 'profile' && (
+  <section className="profile-section">
+    <h2>Your Profile</h2>
+      <ProfileSection profile={profile} />
+    
+  </section>
+  
+)}
+
           {/* Persistently mounted ChatBox: */}
           <div style={{ display: activeTab === 'chat' ? 'block' : 'none' }}>
             <h2>Chat</h2>

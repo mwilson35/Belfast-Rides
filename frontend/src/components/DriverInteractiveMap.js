@@ -20,14 +20,13 @@ const DriverInteractiveMap = ({
   useEffect(() => {
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/light-v11', // ✅ No incidents or traffic layer clearly
+      style: 'mapbox://styles/mapbox/light-v11',
       center: center ? [center.lng, center.lat] : [-5.9301, 54.5973],
       zoom,
       pitch: 60,
       bearing: 0,
       antialias: true,
     });
-    
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
@@ -35,49 +34,54 @@ const DriverInteractiveMap = ({
   }, []);
 
   // Update Markers (distinct driver icon, improved passenger markers)
-// Inside DriverInteractiveMap.js - replace existing markers useEffect
-useEffect(() => {
-  markersRef.current.forEach(marker => marker.remove());
-  markersRef.current = [];
-
-  markers.forEach(markerData => {
-    const el = document.createElement('div');
-    el.style.width = '36px';
-    el.style.height = '36px';
-    el.style.backgroundSize = 'contain';
-    el.style.backgroundRepeat = 'no-repeat';
-    el.style.backgroundPosition = 'center';
-
-    if (markerData.id === 'driver') {
-      el.style.backgroundImage = `url('https://cdn-icons-png.flaticon.com/512/826/826070.png')`;
-      driverMarkerRef.current = new mapboxgl.Marker(el)
-        .setLngLat([markerData.lng, markerData.lat])
-        .addTo(mapRef.current);
-    } else if (markerData.id === 'pickup') {
-      el.style.backgroundImage = `url('https://cdn-icons-png.flaticon.com/512/854/854901.png')`;
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([markerData.lng, markerData.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 15 }).setText('Pickup'))
-        .addTo(mapRef.current);
-      markersRef.current.push(marker);
-    } else if (markerData.id === 'dropoff') {
-      el.style.backgroundImage = `url('https://cdn-icons-png.flaticon.com/512/2776/2776000.png')`;
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([markerData.lng, markerData.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 15 }).setText('Destination'))
-        .addTo(mapRef.current);
-      markersRef.current.push(marker);
+  useEffect(() => {
+    // Remove the existing driver marker
+    if (driverMarkerRef.current) {
+      driverMarkerRef.current.remove();
+      driverMarkerRef.current = null;
     }
-  });
-}, [markers]);
+    // Remove other markers (pickup and dropoff)
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
 
+    markers.forEach(markerData => {
+      const el = document.createElement('div');
+      el.style.width = '36px';
+      el.style.height = '36px';
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundRepeat = 'no-repeat';
+      el.style.backgroundPosition = 'center';
+
+      if (markerData.id === 'driver') {
+        // Use the image from your public folder
+        el.style.backgroundImage = `url('${process.env.PUBLIC_URL}/images/car.jpg')`;
+        driverMarkerRef.current = new mapboxgl.Marker(el)
+          .setLngLat([markerData.lng, markerData.lat])
+          .addTo(mapRef.current);
+      } else if (markerData.id === 'pickup') {
+        el.style.backgroundImage = `url('https://cdn-icons-png.flaticon.com/512/854/854901.png')`;
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([markerData.lng, markerData.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 15 }).setText('Pickup'))
+          .addTo(mapRef.current);
+        markersRef.current.push(marker);
+      } else if (markerData.id === 'dropoff') {
+        el.style.backgroundImage = `url('https://cdn-icons-png.flaticon.com/512/2776/2776000.png')`;
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([markerData.lng, markerData.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 15 }).setText('Destination'))
+          .addTo(mapRef.current);
+        markersRef.current.push(marker);
+      }
+    });
+  }, [markers]);
 
   // Directions (Clear route with responsive update)
   useEffect(() => {
     if (!mapRef.current) return;
-  
+
     const map = mapRef.current;
-  
+
     const addRouteLayer = () => {
       if (map.getSource('route')) {
         map.getSource('route').setData(directions);
@@ -99,7 +103,7 @@ useEffect(() => {
         });
       }
     };
-  
+
     if (directions) {
       const tryAddRoute = () => {
         if (!map.getSource('route')) {
@@ -122,20 +126,18 @@ useEffect(() => {
           map.getSource('route').setData(directions);
         }
       };
-      
+
       if (!map.isStyleLoaded()) {
-        map.once('styledata', tryAddRoute); // better than 'load'
+        map.once('styledata', tryAddRoute);
       } else {
         tryAddRoute();
       }
-      
     } else {
-      // 🔥 THIS is the missing piece: remove the route if directions becomes null
+      // Remove the route if directions become null
       if (map.getLayer('route')) map.removeLayer('route');
       if (map.getSource('route')) map.removeSource('route');
     }
   }, [directions]);
-  
 
   // Auto-fit route and markers responsively
   useEffect(() => {
@@ -165,8 +167,8 @@ useEffect(() => {
 
     mapRef.current.easeTo({
       center: [center.lng, center.lat],
-      bearing: 45, // simulating driver’s orientation forward
-      pitch: 65,   // more realistic driving perspective
+      bearing: 45, // Simulate driver’s orientation forward
+      pitch: 65,   // More realistic driving perspective
       zoom: 17.5,
       duration: 600,
       easing: t => t,

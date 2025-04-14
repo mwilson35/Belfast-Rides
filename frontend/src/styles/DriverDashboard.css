@@ -120,3 +120,39 @@ button:hover {
 @keyframes fadeIn {
   to { opacity: 1; }
 }
+.ride-history {
+  padding: 1rem;
+  background-color: #f9fbfd;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.ride-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.ride-history-table th,
+.ride-history-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e6ed;
+}
+
+.ride-history-table th {
+  background-color: #eef2f7;
+  font-weight: 600;
+  color: #333;
+}
+
+.ride-history-table tr:hover {
+  background-color: #f1f5fa;
+}
+
+.section-title {
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  color: #222;
+  font-weight: 600;
+}
