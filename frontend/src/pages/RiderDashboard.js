@@ -240,20 +240,22 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
     
   
     // Listener for ride cancellation:
-    socketRef.current.on('rideCancelled', (data) => {
-      console.log('rideCancelled event received:', data);
-      notify('Your ride has been cancelled by the driver.');
-      setActiveRide(null);
-      setActiveRoute(null); // Clear the active route from state
-      setDriverLocation(null); // 👻 Remove the spooky leftover driver marker
-      setEta(null); // Clear stale ETA data on ride cancellation
-      handleClearPreview();
-    
-      localStorage.removeItem('activeRoute'); // Clear the active route from localStorage
-      localStorage.removeItem('driverLocation'); // 🔥 Exorcise it from storage too
-    });
-    
-    
+// Listener for ride cancellation:
+socketRef.current.on('rideCancelled', (data) => {
+  console.log('rideCancelled event received:', data);
+  const cancelledBy = data.cancelledBy || 'driver';
+  notify(`Your ride has been cancelled by the ${cancelledBy}.`);
+  setActiveRide(null);
+  setActiveRoute(null);  // Clear active route state
+  setDriverLocation(null);  // Remove driver marker
+  setEta(null);  // Clear ETA data
+  handleClearPreview();
+
+  localStorage.removeItem('activeRoute');
+  localStorage.removeItem('driverLocation');
+  localStorage.removeItem('activeRide');
+});
+
     
     
     

@@ -71,10 +71,8 @@ exports.assignDriver = (req, res) => {
 
 
 
-// Cancel a ride
 exports.cancelRide = (req, res) => {
   const { rideId } = req.body;
-
   if (!rideId) {
     return res.status(400).json({ message: 'rideId is required' });
   }
@@ -85,6 +83,11 @@ exports.cancelRide = (req, res) => {
       console.error('Error cancelling ride:', err.message);
       return res.status(500).json({ message: 'Failed to cancel ride' });
     }
+    // Get the socket instance from the Express app:
+    const io = req.app.get('io');
+    // Emit the rideCancelled event with a payload indicating admin cancellation:
+    io.emit('rideCancelled', { rideId, cancelledBy: 'admin' });
+    
     res.json({ message: 'Ride cancelled successfully' });
   });
 };
