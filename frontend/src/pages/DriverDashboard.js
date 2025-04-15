@@ -127,14 +127,17 @@ const DriverDashboard = () => {
     const socket = socketRef.current;
     if (!socket) return;
   
-    const handleCancel = ({ rideId }) => {
+    // Updated handler now checks for cancelledBy and works for both events.
+    const handleCancel = ({ rideId, cancelledBy }) => {
       if (acceptedRideRef.current?.id === rideId) {
         clearRideState();
-        setMessage('The rider cancelled the ride.');
+        const source = cancelledBy || 'rider';
+        setMessage(`Your ride has been cancelled by the ${source}.`);
       }
     };
   
     socket.on('rideCancelledByRider', handleCancel);
+    socket.on('rideCancelled', handleCancel); // New listener for admin (or generic) cancellations.
   
     socket.on('newAvailableRide', (ride) => {
       setAvailableRides((prev) => {
@@ -151,8 +154,10 @@ const DriverDashboard = () => {
       socket.off('newAvailableRide');
       socket.off('removeRide');
       socket.off('rideCancelledByRider', handleCancel);
+      socket.off('rideCancelled', handleCancel);
     };
-  }, []); // ← no more `[acceptedRide]` needed
+  }, []);
+  
   
   
   const handleAcceptRide = async (rideId) => {
