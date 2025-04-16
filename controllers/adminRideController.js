@@ -1,5 +1,6 @@
 const db = require('../db');
 
+
 // View all rides
 exports.getAllRides = (req, res) => {
     const query = `
@@ -33,41 +34,58 @@ exports.getAllRides = (req, res) => {
   };
   
 
-// Assign a driver to a ride
-// Assign a driver to a ride
-exports.assignDriver = (req, res) => {
-  const { rideId, driverId } = req.body;
-
-  if (!rideId || !driverId) {
-    return res.status(400).json({ message: 'rideId and driverId are required' });
-  }
-
-  const checkStatusQuery = 'SELECT status FROM rides WHERE id = ?';
-  db.query(checkStatusQuery, [rideId], (err, results) => {
-    if (err) {
-      console.error('Error checking ride status:', err.message);
-      return res.status(500).json({ message: 'Failed to validate ride status' });
+  exports.assignDriver = (req, res) => {
+    const { rideId, driverId } = req.body;
+  
+    if (!rideId || !driverId) {
+      return res.status(400).json({ message: 'rideId and driverId are required' });
     }
-
-    const ride = results[0];
-    if (!ride) {
-      return res.status(404).json({ message: 'Ride not found' });
-    }
-
-    if (ride.status !== 'requested') {
-      return res.status(400).json({ message: `Cannot assign driver to a ride with status "${ride.status}"` });
-    }
-
-    const updateQuery = 'UPDATE rides SET driver_id = ?, status = "accepted" WHERE id = ?';
-    db.query(updateQuery, [driverId, rideId], (err) => {
+  
+    const checkStatusQuery = 'SELECT status FROM rides WHERE id = ?';
+    db.query(checkStatusQuery, [rideId], (err, results) => {
       if (err) {
-        console.error('Error assigning driver:', err.message);
-        return res.status(500).json({ message: 'Failed to assign driver' });
+        console.error('Error checking ride status:', err.message);
+        return res.status(500).json({ message: 'Failed to validate ride status' });
       }
-      res.json({ message: 'Driver assigned successfully and ride marked as accepted.' });
+  
+      const ride = results[0];
+      if (!ride) {
+        return res.status(404).json({ message: 'Ride not found' });
+      }
+  
+      if (ride.status !== 'requested') {
+        return res.status(400).json({ message: `Cannot assign driver to a ride with status "${ride.status}"` });
+      }
+  
+      const updateQuery = 'UPDATE rides SET driver_id = ?, status = "accepted" WHERE id = ?';
+      db.query(updateQuery, [driverId, rideId], (err) => {
+        if (err) {
+          console.error('Error assigning driver:', err.message);
+          return res.status(500).json({ message: 'Failed to assign driver' });
+        }
+  
+        const io = req.app.get('io');
+        const driverSockets = req.app.get('driverSockets');
+  
+        // Convert driverId to string for lookup
+        const socketId = driverSockets.get(String(driverId));
+        console.log(`Looking for socket of driver ${driverId}, found: ${socketId}`);
+  
+        if (socketId) {
+          // Also send the driverId as a string
+          io.to(socketId).emit('driverAccepted', { rideId, driverId: String(driverId) });
+          console.log(`Sent driverAccepted to socket ${socketId} for driver ${driverId}`);
+        } else {
+          console.warn(`No socket for driver ${driverId}`);
+        }
+  
+        res.json({ message: 'Driver assigned successfully and ride marked as accepted.' });
+      });
     });
-  });
-};
+  };
+  
+  
+  
 
 
 
@@ -85,6 +103,7 @@ exports.cancelRide = (req, res) => {
     }
     // Get the socket instance from the Express app:
     const io = req.app.get('io');
+    
     // Emit the rideCancelled event with a payload indicating admin cancellation:
     io.emit('rideCancelled', { rideId, cancelledBy: 'admin' });
     // Also emit removeRide so it clears in the driver dashboard:

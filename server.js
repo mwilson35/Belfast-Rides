@@ -15,6 +15,8 @@ const ratingsRouter = require('./routes/ratings');
 const db = require('./db'); // Ensure your DB connection is set up
 const adminRoutes = require('./routes/admin');
 const app = express();
+const driverSockets = new Map(); // key: driverId, value: socket.id
+
 
 // Middleware to enable CORS and parse request bodies
 app.use(cors());
@@ -173,6 +175,27 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
   console.log(`New client connected: ${socket.id}`);
+    // When a driver connects, they tell us who they are
+    socket.on('registerDriver', (driverId) => {
+      const driverKey = String(driverId);  // Convert to string
+      driverSockets.set(driverKey, socket.id);
+      console.log(`🚖 Registered driver ${driverKey} with socket ${socket.id}`);
+    });
+    
+    
+  
+    // Clean up when they disconnect
+    socket.on('disconnect', () => {
+      for (const [driverId, sockId] of driverSockets.entries()) {
+        if (sockId === socket.id) {
+          driverSockets.delete(driverId);
+          console.log(`Driver ${driverId} disconnected`);
+          break;
+        }
+      }
+      console.log(`Client disconnected: ${socket.id}`);
+    });
+  
 
   // Listen for clients joining a specific ride room
   socket.on('joinRoom', ({ rideId, role }) => {
@@ -214,6 +237,8 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
+app.set('driverSockets', driverSockets);
+
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

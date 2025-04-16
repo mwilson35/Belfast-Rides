@@ -50,6 +50,8 @@ const DriverDashboard = () => {
   // NEW: Declare socketRef to store the socket instance
   const socketRef = useRef(null);
   const acceptedRideRef = useRef(null); // ← YOU FORGOT THIS GUY
+  const bufferedAssignment = useRef(null);
+
 
 
   // Fetch available rides on mount
@@ -62,17 +64,99 @@ const DriverDashboard = () => {
   useEffect(() => {
     fetchAvailableRides();
   }, []);
+  const handleAssigned = async ({ rideId, driverId }) => {
+    console.log("🟡 [SOCKET] driverAccepted received:", { rideId, driverId });
+    console.log("🟢 [STATE] Current profile.id:", profile?.id);
+  
+    // If the profile isn't loaded yet, buffer the assignment
+    if (!profile) {
+      bufferedAssignment.current = { rideId, driverId };
+      console.warn("⚠️ Buffered assignment because profile not loaded yet");
+      return;
+    }
+  
+    // Ensure both IDs are compared as strings
+    if (String(driverId) !== String(profile.id)) {
+      console.log(`❌ Not for this driver (got ${driverId}, expected ${profile.id})`);
+      return;
+    }
+  
+    try {
+      const response = await api.get(`/rides/accepted-ride-details?rideId=${rideId}`);
+      const ride = response.data;
+      setAcceptedRide(ride);
+      setMessage('A new ride has been assigned to you!');
+  
+      if (ride.pickup_lat && ride.pickup_lng) {
+        setRiderLocation({ lat: ride.pickup_lat, lng: ride.pickup_lng });
+      }
+      if (ride.destination_lat && ride.destination_lng) {
+        setDestination({ lat: ride.destination_lat, lng: ride.destination_lng });
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch ride details:', err);
+    }
+  };
+  
+  
 
   // Socket and geolocation: update driver location and check for arrival
-  useEffect(() => {
-    socketRef.current = io('http://localhost:5000');
-    console.log('Socket connected');
+// Initialize socket only after profile is fetched
+useEffect(() => {
+  if (!profile) return; // wait until profile is loaded
+
+  const socket = io('http://localhost:5000');
+  socketRef.current = socket;
+
+  // Register the driver with the profile ID
+  socket.emit('registerDriver', profile.id);
+  console.log(`Sent registerDriver for driver ${profile.id}`);
+
+  // Listen for ride assignment from admin
+  socket.on('driverAccepted', handleAssigned);
+  console.log('✅ Subscribed to driverAccepted');
+
+  // Listen for new available rides
+  socket.on('newAvailableRide', (ride) => {
+    console.log('New available ride received:', ride);
+    setAvailableRides((prev) => {
+      if (prev.some((r) => r.id === ride.id)) return prev;
+      return [...prev, ride];
+    });
+  });
+
+  // Listen for ride removals (e.g., if a ride is accepted or cancelled)
+  socket.on('removeRide', (rideId) => {
+    console.log('Remove ride event received for ride id:', rideId);
+    setAvailableRides((prev) => prev.filter((r) => r.id !== rideId));
+  });
+
+  // Listen for ride cancellations (both by rider and admin)
+  const handleCancel = ({ rideId, cancelledBy }) => {
+    console.log('Ride cancelled event received:', { rideId, cancelledBy });
+    if (acceptedRideRef.current?.id === rideId) {
+      clearRideState();
+      const source = cancelledBy || 'rider';
+      setMessage(`Your ride has been cancelled by the ${source}.`);
+    }
+  };
+
+  socket.on('rideCancelledByRider', handleCancel);
+  socket.on('rideCancelled', handleCancel);
+
+  return () => {
+    socket.off('driverAccepted', handleAssigned);
+    socket.off('newAvailableRide');
+    socket.off('removeRide');
+    socket.off('rideCancelledByRider', handleCancel);
+    socket.off('rideCancelled', handleCancel);
+    socket.disconnect();
+    console.log('Socket disconnected');
+  };
+}, [profile]);
+
+
   
-    return () => {
-      socketRef.current.disconnect();
-      console.log('Socket disconnected');
-    };
-  }, []);
   
   useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
@@ -122,41 +206,29 @@ const DriverDashboard = () => {
   
     fetchProfile();
   }, []);
+
+
+
   
+
+  
+
   useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
+    if (profile && bufferedAssignment.current) {
+      const data = bufferedAssignment.current;
+      bufferedAssignment.current = null;
   
-    // Updated handler now checks for cancelledBy and works for both events.
-    const handleCancel = ({ rideId, cancelledBy }) => {
-      if (acceptedRideRef.current?.id === rideId) {
-        clearRideState();
-        const source = cancelledBy || 'rider';
-        setMessage(`Your ride has been cancelled by the ${source}.`);
+      // Compare as strings to avoid type mismatches
+      if (String(data.driverId) === String(profile.id)) {
+        handleAssigned(data);
       }
-    };
+    }
+  }, [profile]);
   
-    socket.on('rideCancelledByRider', handleCancel);
-    socket.on('rideCancelled', handleCancel); // New listener for admin (or generic) cancellations.
   
-    socket.on('newAvailableRide', (ride) => {
-      setAvailableRides((prev) => {
-        if (prev.some((r) => r.id === ride.id)) return prev;
-        return [...prev, ride];
-      });
-    });
   
-    socket.on('removeRide', (rideId) => {
-      setAvailableRides((prev) => prev.filter((r) => r.id !== rideId));
-    });
   
-    return () => {
-      socket.off('newAvailableRide');
-      socket.off('removeRide');
-      socket.off('rideCancelledByRider', handleCancel);
-      socket.off('rideCancelled', handleCancel);
-    };
-  }, []);
+ 
   
   
   
@@ -299,6 +371,9 @@ const handleCancelRide = async () => {
     setMessage('Failed to cancel ride.');
   }
 };
+
+
+
 
 
   // Fetch profile data on mount
