@@ -15,7 +15,8 @@ const ratingsRouter = require('./routes/ratings');
 const db = require('./db'); // Ensure your DB connection is set up
 const adminRoutes = require('./routes/admin');
 const app = express();
-const driverSockets = new Map(); // key: driverId, value: socket.id
+const driverSockets = new Map(); // key: driverId, value: socket.id 
+const adminDocumentsRoutes = require('./routes/adminDocuments');
 
 
 // Middleware to enable CORS and parse request bodies
@@ -30,6 +31,7 @@ app.use('/ratings', ratingsRouter);
 
 // Serve static files from the "uploads" folder
 app.use('/uploads', express.static('uploads'));
+app.use('/', adminDocumentsRoutes);
 
 // Debug: log your Google Maps API key (remove in production)
 console.log("Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY);
