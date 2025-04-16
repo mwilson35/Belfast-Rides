@@ -8,6 +8,8 @@ export default function AdminDashboard() {
   const [drivers, setDrivers] = useState([]);
   const [rides, setRides] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [searchInput, setSearchInput] = useState('');
+
 
   useEffect(() => {
     if (activeTab === 'drivers') fetchDrivers();
@@ -237,43 +239,68 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {activeTab === 'documents' && (
-          <>
-            <h2>User Documents</h2>
-            <table className="min-w-full border text-sm">
-              <thead>
-                <tr>
-                  <th className="p-2 border">ID</th>
-                  <th className="p-2 border">User</th>
-                  <th className="p-2 border">Email</th>
-                  <th className="p-2 border">Type</th>
-                  <th className="p-2 border">Status</th>
-                  <th className="p-2 border">File</th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.map(doc => (
-                  <tr key={doc.id}>
-                    <td className="p-2 border">{doc.id}</td>
-                    <td className="p-2 border">{doc.username}</td>
-                    <td className="p-2 border">{doc.email}</td>
-                    <td className="p-2 border">{doc.document_type}</td>
-                    <td className="p-2 border">{doc.status}</td>
-                    <td className="p-2 border">
-                      <a 
-                        href={`http://localhost:5000/${doc.file_path}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        View
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+{activeTab === 'documents' && (
+  <>
+    <h2>User Documents</h2>
+
+    <input
+      type="text"
+      placeholder="Search by username, email, or user ID"
+      onChange={(e) => setSearchInput(e.target.value)}
+      className="mb-3 p-2 border rounded w-full max-w-sm"
+    />
+
+    <table className="min-w-full border text-sm">
+      <thead>
+        <tr>
+          <th className="p-2 border">ID</th>
+          <th className="p-2 border">User</th>
+          <th className="p-2 border">Email</th>
+          <th className="p-2 border">Type</th>
+          <th className="p-2 border">Status</th>
+          <th className="p-2 border">File</th>
+          <th className="p-2 border">Uploaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {[...documents]
+          .filter(doc => {
+            const input = searchInput.toLowerCase();
+            return (
+              doc.username?.toLowerCase().includes(input) ||
+              doc.email?.toLowerCase().includes(input) ||
+              doc.user_id?.toString().includes(input)
+            );
+          })
+          .sort((a, b) => b.id - a.id)
+          .map(doc => (
+            <tr key={doc.id}>
+              <td className="p-2 border">{doc.id}</td>
+              <td className="p-2 border">{doc.username}</td>
+              <td className="p-2 border">{doc.email}</td>
+              <td className="p-2 border">{doc.document_type}</td>
+              <td className="p-2 border">{doc.status}</td>
+              <td className="p-2 border">
+                <a
+                  href={`http://localhost:5000/${doc.file_path}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View
+                </a>
+              </td>
+              <td className="p-2 border">
+                {doc.uploaded_at
+                  ? new Date(doc.uploaded_at).toLocaleString()
+                  : '—'}
+              </td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </>
+)}
+
       </main>
     </div>
   );
