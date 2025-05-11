@@ -2,13 +2,16 @@ import React from 'react';
 import '../styles/DriverDashboard.css';
 
 const AvailableRidesList = ({ rides, onAcceptRide }) => {
-  const getFormattedPrice = (val) =>
-    typeof val === 'number' ? `£${val.toFixed(2)}` : 'N/A';
+  const getFormattedPrice = (val) => {
+    const num = Number(val);
+    return num && !isNaN(num) ? `£${num.toFixed(2)}` : 'N/A';
+  };
 
   return rides && rides.length ? (
     <ul className="available-rides-list list-unstyled">
       {rides.map((ride) => {
-        const rawPrice = ride.price || ride.fare || ride.estimated_fare;
+        const rawPrice = ride.estimated_fare;
+        console.log('Raw estimated_fare:', rawPrice); // explicit debug
         const displayPrice = getFormattedPrice(rawPrice);
 
         return (
@@ -30,3 +33,4 @@ const AvailableRidesList = ({ rides, onAcceptRide }) => {
 };
 
 export default AvailableRidesList;
+
