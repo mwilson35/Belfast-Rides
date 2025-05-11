@@ -1,9 +1,9 @@
 // src/pages/Login.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import api from '../services/api';
-import '../styles/Login.css'; // Import your CSS file without background
+import '../styles/Login.css';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -37,7 +37,6 @@ const Login = () => {
   };
 
   return (
-    // Apply the background as an inline style using process.env.PUBLIC_URL
     <div
       className="login-container"
       style={{
@@ -69,6 +68,9 @@ const Login = () => {
           <button type="submit">Login</button>
         </form>
         {message && <p className="message">{message}</p>}
+        <p>
+          Don't have an account? <Link to="/signup">Signup here</Link>
+        </p>
       </div>
     </div>
   );
