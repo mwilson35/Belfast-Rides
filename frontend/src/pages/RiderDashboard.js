@@ -40,6 +40,7 @@ const RiderDashboard = () => {
   const [activeTab, setActiveTab] = useState('rideRequest');
   const [previewRoute, setPreviewRoute] = useState(null); 
 const [activeRoute, setActiveRoute] = useState(null);   
+const [directions, setDirections] = useState(null);
 
 
   const notify = (msg) => {
@@ -51,9 +52,70 @@ const [activeRoute, setActiveRoute] = useState(null);
   useEffect(() => { activeRideRef.current = activeRide; }, [activeRide]);
 
   const socketRef = useRef(null);
+  
   useEffect(() => {
-    localStorage.removeItem('activeRide'); // clear stale junk on first load
+    const restoreActiveRide = async () => {
+      const storedRide = localStorage.getItem('activeRide');
+      if (storedRide) {
+        const parsedRide = JSON.parse(storedRide);
+  
+        if (['completed', 'cancelled'].includes(parsedRide.status)) {
+          localStorage.removeItem('activeRide');
+          localStorage.removeItem('activeRoute'); // explicitly clear
+          localStorage.removeItem('directions');  // explicitly clear if stored
+          setActiveRide(null);
+          setDirections(null);
+          setActiveRoute(null);
+          return;
+        }
+  
+        try {
+          const enrichedRide = await fetchAcceptedRideDetails(parsedRide.id || parsedRide.rideId);
+          setActiveRide(enrichedRide);
+  
+          let decodedRoute = enrichedRide.decoded_route;
+  
+          if (typeof decodedRoute === 'string') {
+            decodedRoute = JSON.parse(decodedRoute);
+          }
+  
+          if (Array.isArray(decodedRoute)) {
+            setActiveRoute(decodedRoute);
+            setDirections({
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                geometry: {
+                  type: 'LineString',
+                  coordinates: decodedRoute.map(({ lat, lng }) => [lng, lat]),
+                }
+              }]
+            });
+            localStorage.setItem('activeRoute', JSON.stringify(decodedRoute)); // explicitly save
+          } else if (enrichedRide.encoded_polyline) {
+            const geoJson = JSON.parse(enrichedRide.encoded_polyline);
+            setDirections(geoJson);
+            const decodedCoords = geoJson.features[0].geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
+            setActiveRoute(decodedCoords);
+            localStorage.setItem('activeRoute', JSON.stringify(decodedCoords)); // explicitly save
+          }
+        } catch (error) {
+          console.error('Failed to fetch enriched ride details:', error);
+          setActiveRide(parsedRide);
+        }
+      } else {
+        // Explicitly clear all map-related state if no stored ride at all:
+        setDirections(null);
+        setActiveRoute(null);
+        localStorage.removeItem('activeRoute');
+        localStorage.removeItem('directions');
+      }
+    };
+  
+    restoreActiveRide();
   }, []);
+  
+  
   
   useEffect(() => {
     const storedActiveRoute = localStorage.getItem('activeRoute');
