@@ -20,7 +20,18 @@ const adminDocumentsRoutes = require('./routes/adminDocuments');
 
 
 // Middleware to enable CORS and parse request bodies
-app.use(cors());
+const corsOptions = {
+  origin: ['http://192.168.33.3:3000', 'http://localhost:3000'],
+  methods: 'GET,POST,PUT,DELETE,OPTIONS',
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/admin', adminRoutes);

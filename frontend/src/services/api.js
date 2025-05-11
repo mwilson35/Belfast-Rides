@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create an Axios instance with the base URL of your backend
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'http://192.168.33.3:5000',
 });
 
 // Request interceptor to attach the access token
@@ -31,7 +31,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           // Attempt to get a new access token using the refresh token
-          const { data } = await axios.post('http://localhost:5000/refresh-token', { refreshToken });
+          const { data } = await axios.post('http://192.168.33.3:5000/refresh-token', { refreshToken });
           const { accessToken } = data;
           // Update the access token in localStorage
           localStorage.setItem('accessToken', accessToken);
