@@ -10,7 +10,8 @@ const DriverRideHistoryItem = ({ ride, expanded, onToggle }) => {
   // When a ride is expanded, we fetch its static map (similar to the rider process)
   useEffect(() => {
     if (expanded && ride.encoded_polyline) {
-      axios.get('http://localhost:5000/static-map', {
+      axios.get('http://192.168.33.3:5000/static-map', {
+
         params: {
           path: ride.encoded_polyline,
           pickup: ride.pickup_location,

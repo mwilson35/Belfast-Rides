@@ -8,7 +8,7 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
   useEffect(() => {
     if (expanded) {
       axios
-        .get('http://localhost:5000/static-map', {
+        .get('http://192.168.33.3:5000/static-map', {
           params: {
             path: ride.encoded_polyline,
             pickup: ride.pickup_location,

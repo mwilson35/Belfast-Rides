@@ -29,9 +29,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
-app.use(cors(corsOptions));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/admin', adminRoutes);
@@ -178,80 +175,65 @@ app.get('/', (req, res) => {
 // Create an HTTP server from the Express app
 const server = http.createServer(app);
 
-// Initialize Socket.IO with CORS settings (adjust for production)
+// Initialize Socket.IO explicitly for local network use
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: ['http://localhost:3000', 'http://192.168.33.3:3000'], // explicitly your frontend IP
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
 
-// Attach io to the app so controllers can access it
+// Attach io to the app
 app.set('io', io);
 
 io.on('connection', (socket) => {
   console.log(`New client connected: ${socket.id}`);
-    // When a driver connects, they tell us who they are
-    socket.on('registerDriver', (driverId) => {
-      const driverKey = String(driverId);  // Convert to string
-      driverSockets.set(driverKey, socket.id);
-      console.log(`🚖 Registered driver ${driverKey} with socket ${socket.id}`);
-    });
-    
-    
-  
-    // Clean up when they disconnect
-    socket.on('disconnect', () => {
-      for (const [driverId, sockId] of driverSockets.entries()) {
-        if (sockId === socket.id) {
-          driverSockets.delete(driverId);
-          console.log(`Driver ${driverId} disconnected`);
-          break;
-        }
-      }
-      console.log(`Client disconnected: ${socket.id}`);
-    });
-  
 
-  // Listen for clients joining a specific ride room
+  socket.on('registerDriver', (driverId) => {
+    driverSockets.set(String(driverId), socket.id);
+    console.log(`🚖 Driver ${driverId} connected.`);
+  });
+
   socket.on('joinRoom', ({ rideId, role }) => {
     socket.join(rideId);
-    // Optionally notify the room that a new user has joined
     socket.to(rideId).emit('chatMessage', {
       sender: 'System',
-      message: `${role} has joined the chat.`,
+      message: `${role} joined chat.`,
       timestamp: new Date().toISOString()
     });
   });
 
-  // Handle chat messages and emit only to the ride room
   socket.on('chatMessage', (data) => {
-    console.log('Chat message received:', data);
-    // Ensure that the data includes the rideId to target the correct room
     io.to(data.rideId).emit('chatMessage', data);
   });
 
-  // Other events remain the same
   socket.on('driverLocationUpdate', (data) => {
-    console.log("Driver location update:", data);
     io.emit('locationUpdate', data);
   });
 
   socket.on('driverArrived', (data) => {
-    console.log("Driver has arrived:", data);
     io.emit('driverArrived', data);
   });
+
   socket.on('rideCancelled', (data) => {
-    console.log('rideCancelled event from driver:', data);
-    io.emit('rideCancelledByRider', data); // ✅ now it matches frontend
+    io.emit('rideCancelledByRider', data);
   });
-  
-  
+
   socket.on('disconnect', () => {
+    for (const [driverId, sockId] of driverSockets.entries()) {
+      if (sockId === socket.id) {
+        driverSockets.delete(driverId);
+        console.log(`🚖 Driver ${driverId} disconnected.`);
+        break;
+      }
+    }
     console.log(`Client disconnected: ${socket.id}`);
   });
 });
 
 const PORT = process.env.PORT || 5000;
-app.set('driverSockets', driverSockets);
-
 server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
+

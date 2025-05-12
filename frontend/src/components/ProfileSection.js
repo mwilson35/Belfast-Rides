@@ -7,8 +7,9 @@ const ProfileSection = ({ profile }) => {
     profile && profile.profilePicUrl
       ? profile.profilePicUrl.startsWith('http')
         ? profile.profilePicUrl
-        : `http://localhost:5000/${profile.profilePicUrl}`
+        : `http://192.168.33.3:5000/${profile.profilePicUrl}`
       : null;
+
 
   return (
     <section className="profile-section container my-4">

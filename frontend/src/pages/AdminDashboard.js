@@ -11,85 +11,104 @@ export default function AdminDashboard() {
   const [searchInput, setSearchInput] = useState('');
 
 
-  useEffect(() => {
-    if (activeTab === 'drivers') fetchDrivers();
-    if (activeTab === 'documents') fetchDocuments();
-  }, [activeTab]);
+ useEffect(() => {
+  if (activeTab === 'drivers') fetchDrivers();
+  if (activeTab === 'documents') fetchDocuments();
+}, [activeTab]);
 
-  const fetchDrivers = () => {
-    axios.get('http://localhost:5000/admin/drivers')
-      .then(res => setDrivers(res.data))
-      .catch(err => console.error('Failed to fetch drivers:', err));
-  };
+const fetchDrivers = () => {
+  axios.get('http://192.168.33.3:5000/admin/drivers')
+    .then(res => setDrivers(res.data))
+    .catch(err => console.error('Failed to fetch drivers:', err));
+};
 
-  const fetchDocuments = () => {
-    axios.get('http://localhost:5000/admin/user-documents')
-      .then(res => setDocuments(res.data))
-      .catch(err => console.error('Failed to fetch documents:', err));
-  };
+const fetchDocuments = () => {
+  axios.get('http://192.168.33.3:5000/admin/user-documents')
+    .then(res => setDocuments(res.data))
+    .catch(err => console.error('Failed to fetch documents:', err));
+};
 
-  const verifyDriver = (driverId, verified) => {
+const verifyDriver = (driverId, verified) => {
+  const token = localStorage.getItem('token');
+  axios.post('http://192.168.33.3:5000/rides/verify-driver',
+    { driverId, verified },
+    { headers: { Authorization: `Bearer ${token}` } }
+  )
+  .then(() => fetchDrivers())
+  .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
+};
+
+const handleAssignDriver = (rideId, driverId) => {
+  const token = localStorage.getItem('token');
+  axios.post('http://192.168.33.3:5000/admin/rides/assign', { rideId, driverId }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(() => {
+    console.log(`Assigned driver ${driverId} to ride ${rideId}`);
+    setActiveTab(''); setActiveTab('manageRides');
+  })
+  .catch(err => console.error('Failed to assign driver:', err));
+};
+
+const handleCancelRide = (rideId) => {
+  const token = localStorage.getItem('token');
+  axios.post('http://192.168.33.3:5000/admin/rides/cancel', { rideId }, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(() => {
+    console.log(`Cancelled ride ${rideId}`);
+    setActiveTab(''); setActiveTab('manageRides');
+  })
+  .catch(err => console.error('Failed to cancel ride:', err));
+};
+
+useEffect(() => {
+  if (activeTab === 'rides') {
     const token = localStorage.getItem('token');
-    axios.post('http://localhost:5000/rides/verify-driver',
-      { driverId, verified },
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
-    .then(() => fetchDrivers())
-    .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
-  };
-
-  const handleAssignDriver = (rideId, driverId) => {
-    const token = localStorage.getItem('token');
-    axios.post('http://localhost:5000/admin/rides/assign', { rideId, driverId }, {
+    axios.get('http://192.168.33.3:5000/admin/rides', {
       headers: { Authorization: `Bearer ${token}` }
     })
-    .then(() => {
-      console.log(`Assigned driver ${driverId} to ride ${rideId}`);
-      setActiveTab(''); setActiveTab('manageRides');
-    })
-    .catch(err => console.error('Failed to assign driver:', err));
-  };
-
-  const handleCancelRide = (rideId) => {
-    const token = localStorage.getItem('token');
-    axios.post('http://localhost:5000/admin/rides/cancel', { rideId }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(() => {
-      console.log(`Cancelled ride ${rideId}`);
-      setActiveTab(''); setActiveTab('manageRides');
-    })
-    .catch(err => console.error('Failed to cancel ride:', err));
-  };
-
-  useEffect(() => {
-    if (activeTab === 'rides') {
-      const token = localStorage.getItem('token');
-      axios.get('http://localhost:5000/admin/rides', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => setRides(res.data))
-        .catch(err => console.error('Failed to fetch rides:', err));
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab === 'manageRides') {
-      const token = localStorage.getItem('token');
-  
-      axios.get('http://localhost:5000/admin/rides', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
       .then(res => setRides(res.data))
       .catch(err => console.error('Failed to fetch rides:', err));
-  
-      axios.get('http://localhost:5000/admin/drivers', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => setDrivers(res.data))
-      .catch(err => console.error('Failed to fetch drivers:', err));
-    }
-  }, [activeTab]);
+  }
+}, [activeTab]);
+
+useEffect(() => {
+  if (activeTab === 'manageRides') {
+    const token = localStorage.getItem('token');
+
+    axios.get('http://192.168.33.3:5000/admin/rides', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setRides(res.data))
+    .catch(err => console.error('Failed to fetch rides:', err));
+
+    axios.get('http://192.168.33.3:5000/admin/drivers', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setDrivers(res.data))
+    .catch(err => console.error('Failed to fetch drivers:', err));
+  }
+}, [activeTab]);
+
+
+  useEffect(() => {
+  if (activeTab === 'manageRides') {
+    const token = localStorage.getItem('token');
+
+    axios.get('http://192.168.33.3:5000/admin/rides', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setRides(res.data))
+    .catch(err => console.error('Failed to fetch rides:', err));
+
+    axios.get('http://192.168.33.3:5000/admin/drivers', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => setDrivers(res.data))
+    .catch(err => console.error('Failed to fetch drivers:', err));
+  }
+}, [activeTab]);
 
   return (
     <div className="admin-container">
@@ -282,7 +301,7 @@ export default function AdminDashboard() {
               <td className="p-2 border">{doc.status}</td>
               <td className="p-2 border">
                 <a
-                  href={`http://localhost:5000/${doc.file_path}`}
+                  href={`http://192.168.33.3:5000/${doc.file_path}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

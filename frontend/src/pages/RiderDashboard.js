@@ -137,7 +137,10 @@ const [activeRoute, setActiveRoute] = useState(null);
   
   // Socket setup using socketRef
   useEffect(() => {
-    socketRef.current = require('socket.io-client')('http://localhost:5000');
+    socketRef.current = require('socket.io-client')('http://192.168.33.3:5000', {
+  withCredentials: true
+});
+
     
     socketRef.current.on('locationUpdate', (data) => {
       console.log('Raw driver location update:', data);

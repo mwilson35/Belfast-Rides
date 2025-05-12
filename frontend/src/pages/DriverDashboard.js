@@ -105,7 +105,8 @@ const DriverDashboard = () => {
 useEffect(() => {
   if (!profile) return; // wait until profile is loaded
 
-  const socket = io('http://localhost:5000');
+  const socket = io('http://192.168.33.3:5000', { withCredentials: true });
+
   socketRef.current = socket;
 
   // Register the driver with the profile ID
