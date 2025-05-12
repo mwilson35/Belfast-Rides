@@ -103,21 +103,24 @@ const DriverDashboard = () => {
   // Socket and geolocation: update driver location and check for arrival
 // Initialize socket only after profile is fetched
 useEffect(() => {
-  if (!profile) return; // wait until profile is loaded
+  if (!profile) return;
 
   const socket = io('http://192.168.33.3:5000', { withCredentials: true });
-
   socketRef.current = socket;
 
-  // Register the driver with the profile ID
-  socket.emit('registerDriver', profile.id);
-  console.log(`Sent registerDriver for driver ${profile.id}`);
+  socket.on('connect', () => {
+    console.log('✅ Driver socket connected:', socket.id);
+    socket.emit('registerDriver', profile.id);
+    console.log(`Sent registerDriver for driver ${profile.id}`);
+  });
 
-  // Listen for ride assignment from admin
+  socket.on('connect_error', (err) => {
+    console.error('❌ Socket connection error:', err);
+  });
+
   socket.on('driverAccepted', handleAssigned);
   console.log('✅ Subscribed to driverAccepted');
 
-  // Listen for new available rides
   socket.on('newAvailableRide', (ride) => {
     console.log('New available ride received:', ride);
     setAvailableRides((prev) => {
@@ -126,13 +129,11 @@ useEffect(() => {
     });
   });
 
-  // Listen for ride removals (e.g., if a ride is accepted or cancelled)
   socket.on('removeRide', (rideId) => {
     console.log('Remove ride event received for ride id:', rideId);
     setAvailableRides((prev) => prev.filter((r) => r.id !== rideId));
   });
 
-  // Listen for ride cancellations (both by rider and admin)
   const handleCancel = ({ rideId, cancelledBy }) => {
     console.log('Ride cancelled event received:', { rideId, cancelledBy });
     if (acceptedRideRef.current?.id === rideId) {
@@ -157,56 +158,69 @@ useEffect(() => {
 }, [profile]);
 
 
+
   
   
-  useEffect(() => {
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setDriverLocation(loc);
-  
-        // ONLY use existing socket
-        socketRef.current?.emit('driverLocationUpdate', loc);
-  
-        if (riderLocation && acceptedRide && !arrivedPingSent) {
-          const distance = getDistanceFromLatLonInMeters(
-            loc.lat,
-            loc.lng,
-            riderLocation.lat,
-            riderLocation.lng
-          );
-          console.log('Distance to pickup:', distance);
-          if (distance < 55) {
-            setTimeout(() => {
-              socketRef.current?.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
-              setArrivedPingSent(true);
-            }, 2000);
-          }
+useEffect(() => {
+  const watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setDriverLocation(loc);
+
+      socketRef.current?.emit('driverLocationUpdate', { 
+        rideId: acceptedRide?.id, 
+        lat: loc.lat, 
+        lng: loc.lng 
+      });
+
+      if (riderLocation && acceptedRide && !arrivedPingSent) {
+        const distance = getDistanceFromLatLonInMeters(
+          loc.lat,
+          loc.lng,
+          riderLocation.lat,
+          riderLocation.lng
+        );
+
+        console.log('Distance to pickup:', distance);
+        console.log('acceptedRide:', acceptedRide);
+        console.log('arrivedPingSent:', arrivedPingSent);
+
+        if (distance < 55) {
+          setTimeout(() => {
+            socketRef.current?.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
+            setArrivedPingSent(true);
+            console.log('🟢 driverArrived emitted');
+          }, 2000);
         }
-      },
-      (err) => console.error(err),
-      { enableHighAccuracy: true }
-    );
-  
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-    };
-  }, [riderLocation, acceptedRide, arrivedPingSent]);
-  useEffect(() => {
-    acceptedRideRef.current = acceptedRide;
-  }, [acceptedRide]);
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get('/users/profile'); // Or wherever your endpoint is
-        setProfile(res.data);
-      } catch (err) {
-        console.error('Error fetching profile:', err);
       }
-    };
-  
-    fetchProfile();
-  }, []);
+    },
+    (err) => console.error(err),
+    { enableHighAccuracy: true }
+  );
+
+  return () => {
+    navigator.geolocation.clearWatch(watchId);
+  };
+}, [riderLocation, acceptedRide, arrivedPingSent]);
+
+
+useEffect(() => {
+  acceptedRideRef.current = acceptedRide;
+}, [acceptedRide]);
+
+useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get('/users/profile');
+      setProfile(res.data);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
+  fetchProfile();
+}, []);
+
 
 
 

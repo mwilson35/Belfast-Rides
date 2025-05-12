@@ -184,11 +184,12 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
       }
     });
   
-    socketRef.current.on('driverArrived', () => {
-      notify('Your driver has arrived!');
+socketRef.current.on('driverArrived', (data) => { // ✅ Added data parameter
+  console.log('Driver arrived event received:', data); // Debugging clearly
+  notify('Your driver has arrived!');
+  setActiveRide((prev) => (prev ? { ...prev, status: 'arrived' } : prev));
+});
 
-      setActiveRide((prev) => (prev ? { ...prev, status: 'arrived' } : prev));
-    });
   
     socketRef.current.on('rideInProgress', () => {
       notify('Your ride is now in progress!');
@@ -196,53 +197,40 @@ localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overw
     });
   
     socketRef.current.on('rideCompleted', async (data) => {
-      console.log('[SOCKET] Received rideCompleted payload:', data);
-    
-      notify('Your ride is complete!');
-    
-      try {
-        const rideId = data.rideId || (activeRideRef.current?.id ?? activeRideRef.current?.rideId);
-        if (!rideId) throw new Error('Missing ride ID');
-    
-        setRideSummary({
-          ...data,
-          id: data.rideId || data.id, // Normalize so the modal doesn't throw a hissy fit
-        });
-      } catch (err) {
-        console.warn('Could not fetch completed ride summary. Falling back.');
-        const fallback = activeRideRef.current || data || {};
-        setRideSummary({
-          ...fallback,
-          id: fallback.rideId || fallback.id || null,
-        });
-      }
-    
-      setShowRideSummaryModal(true);
-    
-      setTimeout(() => {
-        setActiveRide(null);
-        setActiveRoute(null);
-        setRidePreview(null);
-        setDriverLocation(null);
-        setEta(null);
-    
-        localStorage.removeItem('driverLocation');
-        localStorage.removeItem('activeRoute');
-        localStorage.removeItem('ridePreview');
-    
-        fetchRideHistory().then(setRideHistory).catch(() =>
-          notify('Failed to load ride history.')
-        );
-      }, 500);
-    });
-    
-    
-    
-    
-    
-    
-  
-    // Listener for ride cancellation:
+  const currentRide = activeRideRef.current;
+  const incomingRideId = data.rideId || data.id;
+
+  // ✅ Guard explicitly against mismatches
+  if (!currentRide || (currentRide.id !== incomingRideId && currentRide.rideId !== incomingRideId)) {
+    console.warn('Ignoring rideCompleted event for non-active ride:', incomingRideId);
+    return; // Ignore irrelevant events completely
+  }
+
+  console.log('[SOCKET] Valid rideCompleted payload:', data);
+  notify('Your ride is complete!');
+
+  setRideSummary({
+    ...data,
+    id: incomingRideId,
+  });
+
+  setShowRideSummaryModal(true);
+
+  setTimeout(() => {
+    setActiveRide(null);
+    setActiveRoute(null);
+    setRidePreview(null);
+    setDriverLocation(null);
+    setEta(null);
+    localStorage.removeItem('driverLocation');
+    localStorage.removeItem('activeRoute');
+    localStorage.removeItem('ridePreview');
+    fetchRideHistory().then(setRideHistory).catch(() =>
+      notify('Failed to load ride history.')
+    );
+  }, 500);
+});
+
 // Listener for ride cancellation:
 socketRef.current.on('rideCancelled', (data) => {
   console.log('rideCancelled event received:', data);
@@ -402,47 +390,41 @@ socketRef.current.on('rideCancelled', (data) => {
     }
   };
   
-  const handleRequestRide = async () => {
-    try {
-      const response = await api.post('/rides/request', { pickupLocation, destination });
-      const { rideId, encodedPolyline } = response.data;
-      
-      // Try decoding the polyline from the active ride response.
-      let decodedPath = [];
-      if (encodedPolyline) {
-        decodedPath = polyline.decode(encodedPolyline).map(
-          ([lat, lng]) => ({ lat, lng })
-        );
-      }
-      // If decoding yields an empty array, fallback to the preview route stored in localStorage.
-      if (!decodedPath.length) {
-        const storedRoute = localStorage.getItem('route');
-        if (storedRoute) {
-          decodedPath = JSON.parse(storedRoute);
-        }
-      }
-      
-      console.log("Active ride decodedPath:", decodedPath);  // Expect to see 28 points
-      
-      if (!decodedPath.length) {
-        notify('No valid route found for active ride.');
-        return;
-      }
-      
-      notify(`Ride requested! ID: ${rideId}`);
-      setActiveRide({ ...response.data, status: 'requested', rideId });
-      setActiveRoute(decodedPath);
-      
-      // Clear preview values so they don't interfere.
-      setPreviewRoute(null);
-      setRidePreview(null);
-      localStorage.removeItem('ridePreview');
-      localStorage.removeItem('route');
-    } catch (error) {
-      console.error('Error requesting ride:', error);
-      notify('Failed to request ride.');
+const handleRequestRide = async () => {
+  try {
+    const response = await api.post('/rides/request', { pickupLocation, destination });
+    const { rideId, encodedPolyline } = response.data;
+    
+    let decodedPath = [];
+    if (encodedPolyline) {
+      decodedPath = polyline.decode(encodedPolyline).map(
+        ([lat, lng]) => ({ lat, lng })
+      );
     }
-  };
+    if (!decodedPath.length) {
+      const storedRoute = localStorage.getItem('route');
+      if (storedRoute) {
+        decodedPath = JSON.parse(storedRoute);
+      }
+    }
+    
+    notify(`Ride requested! ID: ${rideId}`);
+    setActiveRide({ ...response.data, status: 'requested', rideId });
+    setActiveRoute(decodedPath);
+    
+    // 🔥 CRITICAL LINE — rider explicitly joins the room here
+    socketRef.current.emit('joinRoom', { rideId, role: 'rider' });
+
+    setPreviewRoute(null);
+    setRidePreview(null);
+    localStorage.removeItem('ridePreview');
+    localStorage.removeItem('route');
+  } catch (error) {
+    console.error('Error requesting ride:', error);
+    notify('Failed to request ride.');
+  }
+};
+
   
   
   

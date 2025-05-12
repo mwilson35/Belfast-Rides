@@ -208,17 +208,24 @@ io.on('connection', (socket) => {
     io.to(data.rideId).emit('chatMessage', data);
   });
 
-  socket.on('driverLocationUpdate', (data) => {
-    io.emit('locationUpdate', data);
-  });
+socket.on('driverLocationUpdate', (data) => {
+    const { rideId } = data;
+    io.to(rideId).emit('locationUpdate', data); 
+});
 
-  socket.on('driverArrived', (data) => {
-    io.emit('driverArrived', data);
-  });
+socket.on('driverArrived', (data) => {
+    const { rideId } = data;
+    console.log('Driver arrived event received on server:', data);  // 🟢 Add explicitly
+    io.to(rideId).emit('driverArrived', data); 
+});
 
-  socket.on('rideCancelled', (data) => {
-    io.emit('rideCancelledByRider', data);
-  });
+
+
+socket.on('rideCancelled', (data) => {
+    const { rideId, cancelledBy } = data;
+    io.to(rideId).emit('rideCancelledByRider', { rideId, cancelledBy }); 
+});
+
 
   socket.on('disconnect', () => {
     for (const [driverId, sockId] of driverSockets.entries()) {

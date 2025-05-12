@@ -1,11 +1,10 @@
-// controllers/rideCompleteController.js
 const db = require('../db');
 const { calculateFare } = require('../utils/fareUtils');
 const { getWeekStartAndEnd } = require('../utils/dateUtils');
 
 exports.completeRide = (req, res) => {
-  const userId = req.user.id; // Extract user ID from the token
-  const userRole = req.user.role; // Extract user role from the token
+  const userId = req.user.id;
+  const userRole = req.user.role;
   const { rideId } = req.body;
 
   console.log(`Completion request by user: ${userId} (Role: ${userRole}) for Ride ID: ${rideId}`);
@@ -14,10 +13,9 @@ exports.completeRide = (req, res) => {
     return res.status(403).json({ message: 'Forbidden: Only drivers can complete rides' });
   }
 
-  // Fetch ride details and validate
   db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, results) => {
     if (err) {
-      console.error('Database error while fetching ride details:', err.message);
+      console.error('Database error:', err.message);
       return res.status(500).json({ message: 'Database error' });
     }
     if (results.length === 0) {
@@ -36,43 +34,34 @@ exports.completeRide = (req, res) => {
       return res.status(400).json({ message: 'Cannot complete a ride that is not in progress or accepted' });
     }
 
-    // Calculate fare using the centralized function
     const pricing = {
       base_fare: 2.5,
       per_km_rate: 1.2,
       surge_multiplier: ride.surge_multiplier || 1.0,
     };
 
-    const fare = calculateFare(ride.distance || 0, pricing); // Use calculated fare
+    const fare = calculateFare(ride.distance || 0, pricing);
 
-    // Update the ride's status, fare, and payment status in the database
     db.query(
       'UPDATE rides SET status = ?, fare = ?, payment_status = ? WHERE id = ?',
       ['completed', fare, 'processed', rideId],
       (err) => {
         if (err) {
-          console.error('Error updating ride details in rides table:', err.message);
+          console.error('Error updating ride:', err.message);
           return res.status(500).json({ message: 'Database error' });
         }
 
-        console.log(`Ride ID: ${rideId} successfully completed by driver: ${userId}, Fare: ${fare}`);
-
-        // Insert earnings into driver_earnings table
         db.query(
           'INSERT INTO driver_earnings (driver_id, ride_id, amount) VALUES (?, ?, ?)',
           [userId, rideId, fare],
           (err) => {
             if (err) {
-              console.error('Error updating driver earnings:', err.message);
+              console.error('Error updating earnings:', err.message);
               return res.status(500).json({ message: 'Error updating driver earnings' });
             }
 
-            console.log(`Earnings updated for Driver ID: ${userId}, Ride ID: ${rideId}, Amount: ${fare}`);
-
-            // Calculate weekly earnings
             const currentDate = new Date();
             const { formattedWeekStart, formattedWeekEnd } = getWeekStartAndEnd(currentDate);
-            console.log(`Updating weekly earnings for week start: ${formattedWeekStart} and end: ${formattedWeekEnd}`);
 
             db.query(
               `INSERT INTO weekly_earnings (driver_id, week_start, week_end, total_earnings)
@@ -85,23 +74,15 @@ exports.completeRide = (req, res) => {
                   return res.status(500).json({ message: 'Error updating weekly earnings' });
                 }
 
-                console.log(`Weekly earnings updated for Driver ID: ${userId}`);
-
-                // Emit rideCompleted event via Socket.IO with full ride details
-                const io = req.app.get('io'); 
+                const io = req.app.get('io');
                 if (io) {
                   db.query('SELECT * FROM rides WHERE id = ?', [rideId], (err, [updatedRide]) => {
                     if (err || !updatedRide) {
-                      console.error('Error re-fetching ride for socket emit:', err);
+                      console.error('Error re-fetching ride:', err);
                       return;
                     }
-                    console.log('[EMIT] rideCompleted:', {
-                      rideId: updatedRide.id,
-                      distance: updatedRide.distance,
-                      created_at: updatedRide.created_at
-                    });
-                    
-                    io.emit('rideCompleted', {
+
+                    io.to(rideId).emit('rideCompleted', {
                       rideId: updatedRide.id,
                       driver_id: updatedRide.driver_id,
                       fare: updatedRide.fare,
@@ -112,9 +93,9 @@ exports.completeRide = (req, res) => {
                       estimated_fare: updatedRide.estimated_fare,
                       message: 'Your ride is complete'
                     });
+
+                    console.log('Emitted targeted rideCompleted event.');
                   });
-                  
-                  console.log('Emitted rideCompleted event with full details');
                 } else {
                   console.error('Socket.IO instance not found');
                 }
