@@ -51,11 +51,10 @@ const Navbar = () => {
 
   return (
     <nav style={navStyle}>
-      <div style={brandStyle}>
-        <a href="/" style={linkStyle}>
-          Belfast Rides
-        </a>
-      </div>
+<div style={brandStyle}>
+  Belfast Rides
+</div>
+
       <div style={toggleStyle} onClick={() => setMenuOpen(!menuOpen)}>
         <div style={barStyle}></div>
         <div style={barStyle}></div>
