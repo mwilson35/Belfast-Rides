@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/AdminDashboard.css';
 import axios from 'axios';
+import api from '../services/api';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -11,63 +12,51 @@ export default function AdminDashboard() {
   const [searchInput, setSearchInput] = useState('');
 
 
- useEffect(() => {
+ 
+useEffect(() => {
   if (activeTab === 'drivers') fetchDrivers();
   if (activeTab === 'documents') fetchDocuments();
 }, [activeTab]);
 
 const fetchDrivers = () => {
-  axios.get('http://192.168.33.3:5000/admin/drivers')
+  api.get('/admin/drivers')
     .then(res => setDrivers(res.data))
     .catch(err => console.error('Failed to fetch drivers:', err));
 };
 
 const fetchDocuments = () => {
-  axios.get('http://192.168.33.3:5000/admin/user-documents')
+  api.get('/admin/user-documents')
     .then(res => setDocuments(res.data))
     .catch(err => console.error('Failed to fetch documents:', err));
 };
 
 const verifyDriver = (driverId, verified) => {
-  const token = localStorage.getItem('token');
-  axios.post('http://192.168.33.3:5000/rides/verify-driver',
-    { driverId, verified },
-    { headers: { Authorization: `Bearer ${token}` } }
-  )
-  .then(() => fetchDrivers())
-  .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
+  api.post('/rides/verify-driver', { driverId, verified })
+    .then(() => fetchDrivers())
+    .catch(err => console.error(`Failed to ${verified ? 'verify' : 'unverify'} driver:`, err));
 };
 
 const handleAssignDriver = (rideId, driverId) => {
-  const token = localStorage.getItem('token');
-  axios.post('http://192.168.33.3:5000/admin/rides/assign', { rideId, driverId }, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(() => {
-    console.log(`Assigned driver ${driverId} to ride ${rideId}`);
-    setActiveTab(''); setActiveTab('manageRides');
-  })
-  .catch(err => console.error('Failed to assign driver:', err));
+  api.post('/admin/rides/assign', { rideId, driverId })
+    .then(() => {
+      console.log(`Assigned driver ${driverId} to ride ${rideId}`);
+      setActiveTab(''); setActiveTab('manageRides');
+    })
+    .catch(err => console.error('Failed to assign driver:', err));
 };
 
 const handleCancelRide = (rideId) => {
-  const token = localStorage.getItem('token');
-  axios.post('http://192.168.33.3:5000/admin/rides/cancel', { rideId }, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(() => {
-    console.log(`Cancelled ride ${rideId}`);
-    setActiveTab(''); setActiveTab('manageRides');
-  })
-  .catch(err => console.error('Failed to cancel ride:', err));
+  api.post('/admin/rides/cancel', { rideId })
+    .then(() => {
+      console.log(`Cancelled ride ${rideId}`);
+      setActiveTab(''); setActiveTab('manageRides');
+    })
+    .catch(err => console.error('Failed to cancel ride:', err));
 };
 
 useEffect(() => {
   if (activeTab === 'rides') {
-    const token = localStorage.getItem('token');
-    axios.get('http://192.168.33.3:5000/admin/rides', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    api.get('/admin/rides')
       .then(res => setRides(res.data))
       .catch(err => console.error('Failed to fetch rides:', err));
   }
@@ -75,40 +64,29 @@ useEffect(() => {
 
 useEffect(() => {
   if (activeTab === 'manageRides') {
-    const token = localStorage.getItem('token');
+    api.get('/admin/rides')
+      .then(res => setRides(res.data))
+      .catch(err => console.error('Failed to fetch rides:', err));
 
-    axios.get('http://192.168.33.3:5000/admin/rides', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setRides(res.data))
-    .catch(err => console.error('Failed to fetch rides:', err));
-
-    axios.get('http://192.168.33.3:5000/admin/drivers', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setDrivers(res.data))
-    .catch(err => console.error('Failed to fetch drivers:', err));
+    api.get('/admin/drivers')
+      .then(res => setDrivers(res.data))
+      .catch(err => console.error('Failed to fetch drivers:', err));
   }
 }, [activeTab]);
 
 
-  useEffect(() => {
+useEffect(() => {
   if (activeTab === 'manageRides') {
-    const token = localStorage.getItem('token');
+    api.get('/admin/rides')
+      .then(res => setRides(res.data))
+      .catch(err => console.error('Failed to fetch rides:', err));
 
-    axios.get('http://192.168.33.3:5000/admin/rides', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setRides(res.data))
-    .catch(err => console.error('Failed to fetch rides:', err));
-
-    axios.get('http://192.168.33.3:5000/admin/drivers', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setDrivers(res.data))
-    .catch(err => console.error('Failed to fetch drivers:', err));
+    api.get('/admin/drivers')
+      .then(res => setDrivers(res.data))
+      .catch(err => console.error('Failed to fetch drivers:', err));
   }
 }, [activeTab]);
+
 
   return (
     <div className="admin-container">
@@ -300,14 +278,15 @@ useEffect(() => {
               <td className="p-2 border">{doc.document_type}</td>
               <td className="p-2 border">{doc.status}</td>
               <td className="p-2 border">
-                <a
-                  href={`http://192.168.33.3:5000/${doc.file_path}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View
-                </a>
-              </td>
+  <a
+    href={`${process.env.REACT_APP_BACKEND_URL}/${doc.file_path}`}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    View
+  </a>
+</td>
+
               <td className="p-2 border">
                 {doc.uploaded_at
                   ? new Date(doc.uploaded_at).toLocaleString()

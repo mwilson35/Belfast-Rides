@@ -137,9 +137,8 @@ const [activeRoute, setActiveRoute] = useState(null);
   
   // Socket setup using socketRef
   useEffect(() => {
-    socketRef.current = require('socket.io-client')('http://192.168.33.3:5000', {
-  withCredentials: true
-});
+    socketRef.current = require('socket.io-client')(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
+
 
     
 socketRef.current.on('locationUpdate', (data) => {

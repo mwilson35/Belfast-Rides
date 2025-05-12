@@ -34,7 +34,8 @@ const ChatBox = ({ rideId, role }) => {
   
 
   useEffect(() => {
-    const newSocket = io('http://192.168.33.3:5000', { withCredentials: true });
+    require('socket.io-client')(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
+
      setSocket(newSocket);
 
     // Once connected, join the room using the rideId and role

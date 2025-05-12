@@ -105,7 +105,8 @@ const DriverDashboard = () => {
 useEffect(() => {
   if (!profile) return;
 
-  const socket = io('http://192.168.33.3:5000', { withCredentials: true });
+  require('socket.io-client')(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
+
   socketRef.current = socket;
 
   socket.on('connect', () => {

@@ -8,24 +8,23 @@ const DriverRideHistoryItem = ({ ride, expanded, onToggle }) => {
   const [mapUrl, setMapUrl] = useState('');
 
   // When a ride is expanded, we fetch its static map (similar to the rider process)
-  useEffect(() => {
-    if (expanded && ride.encoded_polyline) {
-      axios.get('http://192.168.33.3:5000/static-map', {
-
-        params: {
-          path: ride.encoded_polyline,
-          pickup: ride.pickup_location,
-          destination: ride.destination,
-        },
-      })
-      .then((response) => {
-        setMapUrl(response.data.url);
-      })
-      .catch((error) => {
-        console.error('Error fetching static map:', error);
-      });
-    }
-  }, [expanded, ride]);
+useEffect(() => {
+  if (expanded && ride.encoded_polyline) {
+    api.get('/static-map', {
+      params: {
+        path: ride.encoded_polyline,
+        pickup: ride.pickup_location,
+        destination: ride.destination,
+      },
+    })
+    .then((response) => {
+      setMapUrl(response.data.url);
+    })
+    .catch((error) => {
+      console.error('Error fetching static map:', error);
+    });
+  }
+}, [expanded, ride]);
 
   return (
     <li

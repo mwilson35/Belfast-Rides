@@ -21,11 +21,16 @@ const adminDocumentsRoutes = require('./routes/adminDocuments');
 
 // Middleware to enable CORS and parse request bodies
 const corsOptions = {
-  origin: ['http://192.168.33.3:3000', 'http://localhost:3000'],
+  origin: [
+    'http://192.168.33.3:3000',
+    'http://localhost:3000',
+    'https://belfastrides.netlify.app' 
+  ],
   methods: 'GET,POST,PUT,DELETE,OPTIONS',
   allowedHeaders: 'Content-Type,Authorization',
   credentials: true
 };
+
 
 app.use(cors(corsOptions));
 

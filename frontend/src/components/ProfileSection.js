@@ -7,7 +7,8 @@ const ProfileSection = ({ profile }) => {
     profile && profile.profilePicUrl
       ? profile.profilePicUrl.startsWith('http')
         ? profile.profilePicUrl
-        : `http://192.168.33.3:5000/${profile.profilePicUrl}`
+        : `${process.env.REACT_APP_BACKEND_URL}/${profile.profilePicUrl}`
+
       : null;
 
 
