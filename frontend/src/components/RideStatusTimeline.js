@@ -3,7 +3,7 @@ import React from 'react';
 import '../styles/Dashboard.css'; // Ensure this file is imported so our CSS applies
 
 const RideStatusTimeline = ({ status }) => {
-  const statuses = ['requested', 'accepted', 'arrived', 'in progress', 'completed'];
+  const statuses = ['requested', 'accepted', 'arrived', 'in_progress', 'completed'];
   const currentIndex = statuses.indexOf(status);
 
   return (

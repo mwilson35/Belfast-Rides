@@ -11,7 +11,7 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
   if (status === 'requested') progressValue = 25;
   else if (status === 'accepted') progressValue = 50;
   else if (status === 'arrived') progressValue = 60; 
-  else if (status === 'in progress') progressValue = 75;
+  else if (status === 'in_progress') progressValue = 75;
   else if (status === 'completed') progressValue = 100;
 
   return (
@@ -37,7 +37,8 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
       {eta && (
         <p>
           <strong>
-            ETA to {activeRide.status === 'in progress' ? 'destination' : 'pickup'}:
+            ETA to {status === 'in_progress' ? 'destination' : 'pickup'}:
+
           </strong> {eta}
         </p>
       )}
@@ -57,7 +58,7 @@ const ActiveRideSection = ({ activeRide, eta, handleCancelRide }) => {
         Cancel Ride
       </button>
 
-      {(['accepted', 'arrived', 'in progress'].includes(status)) && activeRide.driverDetails && (
+      {(['accepted', 'arrived', 'in_progress'].includes(status)) && activeRide.driverDetails && (
   <DriverDetails 
     driverDetails={activeRide.driverDetails} 
     driverRating={activeRide.driverRating} 
