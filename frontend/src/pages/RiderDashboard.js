@@ -142,59 +142,72 @@ const [activeRoute, setActiveRoute] = useState(null);
 });
 
     
-    socketRef.current.on('locationUpdate', (data) => {
-      console.log('Raw driver location update:', data);
-        // Don't process location updates if no active ride or ride not accepted yet
-  const ride = activeRideRef.current;
-  if (!ride || ride.status === 'requested') {
-    console.log('Ignoring driver location update: no accepted ride yet.');
+socketRef.current.on('locationUpdate', (data) => {
+  const currentRide = activeRideRef.current;
+  if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
+    console.warn('Ignoring irrelevant locationUpdate event:', data);
     return;
   }
 
-    
-      const lat = parseFloat(data.lat);
-      const lng = parseFloat(data.lng);
-    
-      if (!isNaN(lat) && !isNaN(lng)) {
-        const coords = { id: 'driver', lat, lng };
-        console.log('Setting driver location:', coords);
-        setDriverLocation(coords);
-        localStorage.setItem('driverLocation', JSON.stringify(coords));
-      } else {
-        console.warn('Ignored bad driver location:', data);
-      }
-    });
+  const lat = parseFloat(data.lat);
+  const lng = parseFloat(data.lng);
+
+  if (!isNaN(lat) && !isNaN(lng)) {
+    const coords = { id: 'driver', lat, lng };
+    setDriverLocation(coords);
+    localStorage.setItem('driverLocation', JSON.stringify(coords));
+  } else {
+    console.warn('Ignored bad driver location:', data);
+  }
+});
+
     
   
-    socketRef.current.on('driverAccepted', async (data) => {
-      notify('Your ride has been accepted!');
-      try {
-        const rideId =
-          data.rideId ||
-          (activeRideRef.current && (activeRideRef.current.rideId || activeRideRef.current.id));
-        if (!rideId) return;
-        const response = await api.get('/rides/accepted-ride-details', { params: { rideId } });
-        console.log("Accepted ride details response:", response.data);
-
-        setActiveRide(response.data);
-localStorage.setItem('activeRide', JSON.stringify(response.data)); // just overwrite clean
-
-      } catch (error) {
-        setActiveRide((prev) => (prev ? { ...prev, status: 'accepted' } : prev));
-      }
-    });
+socketRef.current.on('driverAccepted', async (data) => {
+  const currentRide = activeRideRef.current;
+  const incomingRideId = data.rideId;
   
-socketRef.current.on('driverArrived', (data) => { // ✅ Added data parameter
-  console.log('Driver arrived event received:', data); // Debugging clearly
-  notify('Your driver has arrived!');
-  setActiveRide((prev) => (prev ? { ...prev, status: 'arrived' } : prev));
+  if (!currentRide || (currentRide.id !== incomingRideId && currentRide.rideId !== incomingRideId)) {
+    console.warn('Ignoring irrelevant driverAccepted event:', data);
+    return;
+  }
+
+  notify('Your ride has been accepted!');
+  
+  try {
+    const response = await api.get('/rides/accepted-ride-details', { params: { rideId: incomingRideId } });
+    setActiveRide(response.data);
+    localStorage.setItem('activeRide', JSON.stringify(response.data));
+  } catch (error) {
+    setActiveRide(prev => prev ? { ...prev, status: 'accepted' } : prev);
+  }
 });
 
   
-    socketRef.current.on('rideInProgress', () => {
-      notify('Your ride is now in progress!');
-      setActiveRide((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
-    });
+socketRef.current.on('driverArrived', (data) => {
+  const currentRide = activeRideRef.current;
+  if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
+    console.warn('Ignoring irrelevant driverArrived event:', data);
+    return; // explicitly stop irrelevant notifications
+  }
+  
+  notify('Your driver has arrived!');
+  setActiveRide(prev => prev ? { ...prev, status: 'arrived' } : prev);
+});
+
+
+  
+socketRef.current.on('rideInProgress', (data) => {
+  const currentRide = activeRideRef.current;
+  if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
+    console.warn('Ignoring irrelevant rideInProgress event:', data);
+    return;
+  }
+
+  notify('Your ride is now in progress!');
+  setActiveRide(prev => prev ? { ...prev, status: 'in_progress' } : prev);
+});
+
   
     socketRef.current.on('rideCompleted', async (data) => {
   const currentRide = activeRideRef.current;
@@ -233,19 +246,25 @@ socketRef.current.on('driverArrived', (data) => { // ✅ Added data parameter
 
 // Listener for ride cancellation:
 socketRef.current.on('rideCancelled', (data) => {
-  console.log('rideCancelled event received:', data);
+  const currentRide = activeRideRef.current;
+  if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
+    console.warn('Ignoring irrelevant rideCancelled event:', data);
+    return;
+  }
+
   const cancelledBy = data.cancelledBy || 'driver';
   notify(`Your ride has been cancelled by the ${cancelledBy}.`);
   setActiveRide(null);
-  setActiveRoute(null);  // Clear active route state
-  setDriverLocation(null);  // Remove driver marker
-  setEta(null);  // Clear ETA data
+  setActiveRoute(null);
+  setDriverLocation(null);
+  setEta(null);
   handleClearPreview();
 
   localStorage.removeItem('activeRoute');
   localStorage.removeItem('driverLocation');
   localStorage.removeItem('activeRide');
 });
+
 
     
     
