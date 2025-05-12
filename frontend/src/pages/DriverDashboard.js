@@ -101,12 +101,10 @@ const DriverDashboard = () => {
   
 
   // Socket and geolocation: update driver location and check for arrival
-// Initialize socket only after profile is fetched
 useEffect(() => {
   if (!profile) return;
 
-  require('socket.io-client')(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
-
+  const socket = io(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
   socketRef.current = socket;
 
   socket.on('connect', () => {
@@ -157,6 +155,7 @@ useEffect(() => {
     console.log('Socket disconnected');
   };
 }, [profile]);
+
 
 
 

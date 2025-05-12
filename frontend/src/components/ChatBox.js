@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import '../styles/ChatBox.css';
+const newSocket = io(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
 
 const ChatBox = ({ rideId, role }) => {
   const [socket, setSocket] = useState(null);

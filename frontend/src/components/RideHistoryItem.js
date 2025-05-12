@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/RideHistory.css'; // Import RideHistory styles
+import api from '../services/api';
+
 
 const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
   const [mapUrl, setMapUrl] = useState('');
