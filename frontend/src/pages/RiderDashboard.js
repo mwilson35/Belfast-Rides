@@ -41,6 +41,14 @@ const RiderDashboard = () => {
   const [previewRoute, setPreviewRoute] = useState(null); 
 const [activeRoute, setActiveRoute] = useState(null);   
 
+const handleLeaveRoom = (rideId) => {
+  if (rideId && socketRef.current) {
+    socketRef.current.emit('leaveRoom', { rideId, role: 'rider' });
+    console.log(`Explicitly left room ${rideId}`);
+  }
+};
+
+
 
   const notify = (msg) => {
     setNotification(msg);
@@ -208,14 +216,13 @@ socketRef.current.on('rideInProgress', (data) => {
 });
 
   
-    socketRef.current.on('rideCompleted', async (data) => {
+socketRef.current.on('rideCompleted', async (data) => {
   const currentRide = activeRideRef.current;
   const incomingRideId = data.rideId || data.id;
 
-  // ✅ Guard explicitly against mismatches
   if (!currentRide || (currentRide.id !== incomingRideId && currentRide.rideId !== incomingRideId)) {
     console.warn('Ignoring rideCompleted event for non-active ride:', incomingRideId);
-    return; // Ignore irrelevant events completely
+    return;
   }
 
   console.log('[SOCKET] Valid rideCompleted payload:', data);
@@ -227,6 +234,8 @@ socketRef.current.on('rideInProgress', (data) => {
   });
 
   setShowRideSummaryModal(true);
+
+  handleLeaveRoom(incomingRideId);  // ✅ explicitly leave socket room here clearly
 
   setTimeout(() => {
     setActiveRide(null);
@@ -243,7 +252,7 @@ socketRef.current.on('rideInProgress', (data) => {
   }, 500);
 });
 
-// Listener for ride cancellation:
+
 socketRef.current.on('rideCancelled', (data) => {
   const currentRide = activeRideRef.current;
   if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
@@ -253,6 +262,9 @@ socketRef.current.on('rideCancelled', (data) => {
 
   const cancelledBy = data.cancelledBy || 'driver';
   notify(`Your ride has been cancelled by the ${cancelledBy}.`);
+
+  handleLeaveRoom(data.rideId);  // ✅ explicitly leave socket room here clearly
+
   setActiveRide(null);
   setActiveRoute(null);
   setDriverLocation(null);
@@ -263,6 +275,7 @@ socketRef.current.on('rideCancelled', (data) => {
   localStorage.removeItem('driverLocation');
   localStorage.removeItem('activeRide');
 });
+
 
 
     
