@@ -4,18 +4,32 @@ exports.previewRide = async (req, res) => {
   const { pickupLocation, destination } = req.body;
 
   if (!pickupLocation || !destination) {
-    return res.status(400).json({ message: 'Pickup and destination locations are required.' });
+    return res.status(400).json({ message: 'Pickup and destination addresses are required.' });
   }
 
   const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   try {
-    console.log(`Previewing ride from ${pickupLocation.lat},${pickupLocation.lng} to ${destination.lat},${destination.lng}`);
+    // Explicitly geocode addresses first
+    const geocodeAddress = async (address) => {
+      const geocodeRes = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
+        params: { address, key: googleApiKey }
+      });
+
+      if (geocodeRes.data.status !== 'OK') {
+        throw new Error(`Geocoding failed for ${address}`);
+      }
+
+      return geocodeRes.data.results[0].geometry.location;
+    };
+
+    const pickupCoords = await geocodeAddress(pickupLocation);
+    const destinationCoords = await geocodeAddress(destination);
 
     const directionsResponse = await axios.get(`https://maps.googleapis.com/maps/api/directions/json`, {
       params: {
-        origin: `${pickupLocation.lat},${pickupLocation.lng}`,
-        destination: `${destination.lat},${destination.lng}`,
+        origin: `${pickupCoords.lat},${pickupCoords.lng}`,
+        destination: `${destinationCoords.lat},${destinationCoords.lng}`,
         mode: 'driving',
         key: googleApiKey
       }
@@ -38,11 +52,6 @@ exports.previewRide = async (req, res) => {
 
     const encodedPolyline = route.overview_polyline.points;
 
-    const pickupLat = route.legs[0].start_location.lat;
-    const pickupLng = route.legs[0].start_location.lng;
-    const destinationLat = route.legs[0].end_location.lat;
-    const destinationLng = route.legs[0].end_location.lng;
-
     res.status(200).json({
       pickupLocation,
       destination,
@@ -50,10 +59,10 @@ exports.previewRide = async (req, res) => {
       duration: `${Math.round(durationInSeconds / 60)} mins`,
       estimatedFare: `£${estimatedFare.toFixed(2)}`,
       encodedPolyline,
-      pickupLat,
-      pickupLng,
-      destinationLat,
-      destinationLng
+      pickupLat: pickupCoords.lat,
+      pickupLng: pickupCoords.lng,
+      destinationLat: destinationCoords.lat,
+      destinationLng: destinationCoords.lng
     });
   } catch (error) {
     console.error('Google API Error:', error.response?.data || error.message);
