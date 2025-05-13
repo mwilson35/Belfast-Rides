@@ -10,12 +10,12 @@ exports.previewRide = async (req, res) => {
   const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   try {
-    console.log(`Previewing ride from ${pickupLocation} to ${destination}`);
+    console.log(`Previewing ride from ${pickupLocation.lat},${pickupLocation.lng} to ${destination.lat},${destination.lng}`);
 
     const directionsResponse = await axios.get(`https://maps.googleapis.com/maps/api/directions/json`, {
       params: {
-        origin: pickupLocation,
-        destination: destination,
+        origin: `${pickupLocation.lat},${pickupLocation.lng}`,
+        destination: `${destination.lat},${destination.lng}`,
         mode: 'driving',
         key: googleApiKey
       }
@@ -56,7 +56,10 @@ exports.previewRide = async (req, res) => {
       destinationLng
     });
   } catch (error) {
-    console.error('Error during Google preview:', error.response?.data || error.message);
-    res.status(500).json({ message: 'Failed to preview ride with Google.' });
+    console.error('Google API Error:', error.response?.data || error.message);
+    res.status(500).json({ 
+      message: 'Failed to preview ride with Google.', 
+      error: error.response?.data || error.message 
+    });
   }
 };
