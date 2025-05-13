@@ -204,30 +204,39 @@ io.on('connection', (socket) => {
       message: `${role} joined chat.`,
       timestamp: new Date().toISOString()
     });
+    console.log(`User with role ${role} joined room ${rideId}`);
+  });
+
+  // ✅ Explicitly add leaveRoom event here clearly
+  socket.on('leaveRoom', ({ rideId, role }) => {
+    socket.leave(rideId);
+    socket.to(rideId).emit('chatMessage', {
+      sender: 'System',
+      message: `${role} left chat.`,
+      timestamp: new Date().toISOString()
+    });
+    console.log(`User with role ${role} left room ${rideId}`);
   });
 
   socket.on('chatMessage', (data) => {
     io.to(data.rideId).emit('chatMessage', data);
   });
 
-socket.on('driverLocationUpdate', (data) => {
+  socket.on('driverLocationUpdate', (data) => {
     const { rideId } = data;
     io.to(rideId).emit('locationUpdate', data); 
-});
+  });
 
-socket.on('driverArrived', (data) => {
+  socket.on('driverArrived', (data) => {
     const { rideId } = data;
-    console.log('Driver arrived event received on server:', data);  // 🟢 Add explicitly
+    console.log('Driver arrived event received on server:', data);
     io.to(rideId).emit('driverArrived', data); 
-});
+  });
 
-
-
-socket.on('rideCancelled', (data) => {
+  socket.on('rideCancelled', (data) => {
     const { rideId, cancelledBy } = data;
     io.to(rideId).emit('rideCancelledByRider', { rideId, cancelledBy }); 
-});
-
+  });
 
   socket.on('disconnect', () => {
     for (const [driverId, sockId] of driverSockets.entries()) {
@@ -240,6 +249,7 @@ socket.on('rideCancelled', (data) => {
     console.log(`Client disconnected: ${socket.id}`);
   });
 });
+
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

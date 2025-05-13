@@ -51,6 +51,13 @@ const DriverDashboard = () => {
   const socketRef = useRef(null);
   const acceptedRideRef = useRef(null); // ← YOU FORGOT THIS GUY
   const bufferedAssignment = useRef(null);
+  const handleLeaveRoom = (rideId) => {
+  if (rideId && socketRef.current) {
+    socketRef.current.emit('leaveRoom', { rideId, role: 'driver' });
+    console.log(`Explicitly left room ${rideId}`);
+  }
+};
+
 
 
 
@@ -366,6 +373,9 @@ const handleCompleteRide = async () => {
   try {
     const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
     setMessage(response.data.message || 'Ride completed successfully');
+
+    handleLeaveRoom(acceptedRide.id); // ✅ Explicitly leave socket room here
+
     clearRideState();  // Clear map states
     fetchAvailableRides(); // Refresh available rides
   } catch (error) {
@@ -374,10 +384,14 @@ const handleCompleteRide = async () => {
   }
 };
 
+
 const handleCancelRide = async () => {
   try {
     const response = await api.post('/rides/cancel', { rideId: acceptedRide.id });
     setMessage(response.data.message || 'Ride cancelled successfully');
+
+    handleLeaveRoom(acceptedRide.id); // ✅ Explicitly leave socket room here
+
     socketRef.current.emit('rideCancelled', { rideId: acceptedRide.id });
     clearRideState();  // Clear map states
     fetchAvailableRides(); // Refresh available rides
@@ -386,6 +400,7 @@ const handleCancelRide = async () => {
     setMessage('Failed to cancel ride.');
   }
 };
+
 
 
 
