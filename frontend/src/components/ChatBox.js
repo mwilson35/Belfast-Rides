@@ -1,88 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import '../styles/ChatBox.css';
-const newSocket = io(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
+
+// Shared socket instance
+const socket = io(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
 
 const ChatBox = ({ rideId, role }) => {
-  const [socket, setSocket] = useState(null);
-  const [messages, setMessages] = useState([]);  // Array of chat messages
+  const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
 
-  // Load stored messages from localStorage when rideId changes
+  // Load stored messages when rideId changes
   useEffect(() => {
     if (rideId) {
-      const storedMessages = localStorage.getItem(`chatMessages_${rideId}`);
-      if (storedMessages) {
-        setMessages(JSON.parse(storedMessages));
-      }
+      const stored = localStorage.getItem(`chatMessages_${rideId}`);
+      if (stored) setMessages(JSON.parse(stored));
     }
   }, [rideId]);
 
-  // Persist messages to localStorage whenever they change
+  // Persist messages
   useEffect(() => {
     if (rideId) {
       localStorage.setItem(`chatMessages_${rideId}`, JSON.stringify(messages));
     }
   }, [messages, rideId]);
-  
+
+  // Cleanup old stored messages on ride change
   useEffect(() => {
     return () => {
-      if (rideId) {
-        localStorage.removeItem(`chatMessages_${rideId}`);
-      }
+      if (rideId) localStorage.removeItem(`chatMessages_${rideId}`);
     };
   }, [rideId]);
-  
 
+  // Join/leave room and manage listeners
   useEffect(() => {
-    require('socket.io-client')(process.env.REACT_APP_BACKEND_URL, { withCredentials: true });
+    if (!rideId) return;
 
-     setSocket(newSocket);
+    // Join new room
+    socket.emit('joinRoom', { rideId, role });
+    console.log(`ChatBox: joined room ${rideId}`);
 
-    // Once connected, join the room using the rideId and role
-    if (rideId) {
-      newSocket.emit('joinRoom', { rideId, role });
-    }
+    // Handler for incoming messages
+    const handler = (data) => {
+      if (data.rideId === rideId) {
+        setMessages(prev => [...prev, data]);
+      }
+    };
 
-    // Listen for incoming chat messages
-    newSocket.on('chatMessage', (data) => {
-      setMessages(prevMessages => [...prevMessages, data]);
-    });
+    socket.on('chatMessage', handler);
 
-    // Cleanup on unmount
     return () => {
-      newSocket.disconnect();
+      // Leave old room
+      socket.emit('leaveRoom', { rideId, role });
+      console.log(`ChatBox: left room ${rideId}`);
+      socket.off('chatMessage', handler);
     };
   }, [rideId, role]);
 
   const sendMessage = () => {
-    if (messageInput.trim() === '' || !socket) return;
-    const chatData = {
-      rideId,
-      sender: role,
-      message: messageInput,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Emit the message to the server; the message will be added when the server broadcasts it back
+    if (!messageInput.trim()) return;
+    const chatData = { rideId, sender: role, message: messageInput, timestamp: new Date().toISOString() };
     socket.emit('chatMessage', chatData);
     setMessageInput('');
   };
 
-  const handleEnterKey = (e) => {
-    if (e.key === 'Enter') {
-      sendMessage();
-    }
-  };
+  const handleEnterKey = (e) => { if (e.key === 'Enter') sendMessage(); };
 
   return (
     <div className="chat-box card p-3 mt-3">
       <h3 className="card-title">Chat</h3>
       <div className="chat-messages mb-3">
-        {messages.map((msg, index) => (
-          <div key={index} className="chat-message mb-2">
-            <strong>{msg.sender}: </strong>
-            <span>{msg.message}</span>
+        {messages.map((msg, i) => (
+          <div key={i} className="chat-message mb-2">
+            <strong>{msg.sender}: </strong><span>{msg.message}</span>
           </div>
         ))}
       </div>
@@ -91,13 +80,11 @@ const ChatBox = ({ rideId, role }) => {
           type="text"
           className="form-control"
           value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
+          onChange={e => setMessageInput(e.target.value)}
           onKeyDown={handleEnterKey}
           placeholder="Type your message..."
         />
-        <button onClick={sendMessage} className="btn btn-primary">
-          Send
-        </button>
+        <button onClick={sendMessage} className="btn btn-primary">Send</button>
       </div>
     </div>
   );
