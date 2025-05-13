@@ -253,6 +253,7 @@ socketRef.current.on('rideCompleted', async (data) => {
 });
 
 
+// Existing rideCancelled handler (catches admin or generic cancels)
 socketRef.current.on('rideCancelled', (data) => {
   const currentRide = activeRideRef.current;
   if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
@@ -263,7 +264,7 @@ socketRef.current.on('rideCancelled', (data) => {
   const cancelledBy = data.cancelledBy || 'driver';
   notify(`Your ride has been cancelled by the ${cancelledBy}.`);
 
-  handleLeaveRoom(data.rideId);  // ✅ explicitly leave socket room here clearly
+  handleLeaveRoom(data.rideId);
 
   setActiveRide(null);
   setActiveRoute(null);
@@ -275,6 +276,30 @@ socketRef.current.on('rideCancelled', (data) => {
   localStorage.removeItem('driverLocation');
   localStorage.removeItem('activeRide');
 });
+
+// Add this right below it to catch driver-side cancellations
+socketRef.current.on('rideCancelledByRider', (data) => {
+  const currentRide = activeRideRef.current;
+  if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
+    console.warn('Ignoring irrelevant rideCancelledByRider event:', data);
+    return;
+  }
+
+  notify('Your ride has been cancelled by the driver.');
+  handleLeaveRoom(data.rideId);
+
+  setActiveRide(null);
+  setActiveRoute(null);
+  setDriverLocation(null);
+  setEta(null);
+  handleClearPreview();
+
+  localStorage.removeItem('activeRide');
+  localStorage.removeItem('activeRoute');
+  localStorage.removeItem('ridePreview');
+  localStorage.removeItem('driverLocation');
+});
+
 
 
 
