@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/RideRequest.css'; // Link to the CSS file located at C:\Users\user\Documents\Projects\Belfast-Rides\frontend\src\styles\RideRequest.css
+import '../styles/RideRequest.css';
 
 const RideRequest = ({
   pickupLocation,
