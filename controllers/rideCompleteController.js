@@ -7,7 +7,7 @@ exports.completeRide = (req, res) => {
   const userRole = req.user.role;
   const { rideId } = req.body;
 
-  console.log(`Completion request by user: ${userId} (Role: ${userRole}) for Ride ID: ${rideId}`);
+ 
 
   if (userRole !== 'driver') {
     return res.status(403).json({ message: 'Forbidden: Only drivers can complete rides' });
@@ -94,7 +94,7 @@ exports.completeRide = (req, res) => {
                       message: 'Your ride is complete'
                     });
 
-                    console.log('Emitted targeted rideCompleted event.');
+                 
                   });
                 } else {
                   console.error('Socket.IO instance not found');
