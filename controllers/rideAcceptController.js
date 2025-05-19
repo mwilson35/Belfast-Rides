@@ -38,8 +38,7 @@ exports.acceptRide = async (req, res) => {
           message: 'Driver accepted the ride.',
         });
 
-        io.emit('removeRide', rideId); // 🧹 Tell all other drivers to ditch it
-
+        io.emit('removeRide', rideId); 
         return res.json({
           message: 'Ride accepted successfully.',
           rideId,
