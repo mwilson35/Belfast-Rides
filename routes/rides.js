@@ -63,7 +63,7 @@ router.post('/verify-driver', authenticateToken, driverVerificationController.ve
 //active ride 
 router.get('/active', authenticateToken, rideActiveController.getActiveRide);
 
-// In routes/rides.js (add this near your other test endpoints)
+//testing events
 // router.post('/test-driver-arrived', authenticateToken, (req, res) => {
 //     const io = req.app.get('io');
 //     const { rideId } = req.body;
