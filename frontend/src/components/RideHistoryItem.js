@@ -18,7 +18,7 @@ const RideHistoryItem = ({ ride, expanded, onToggle, onRebook }) => {
         },
       })
       .then((response) => {
-        console.log('Static map response:', response.data);
+   
         setMapUrl(response.data.url);
       })
       .catch((error) => {
