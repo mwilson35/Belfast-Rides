@@ -1,4 +1,4 @@
-// src/components/MapDisplay.js
+
 import React from 'react';
 
 const MapDisplay = ({ ridePreview }) => {
