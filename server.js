@@ -153,7 +153,7 @@ try {
 
 // Register ride management routes
 try {
-  console.log('Registering ride management routes...');
+ 
   app.use('/rides', ridesRoutes);
   
 } catch (error) {
