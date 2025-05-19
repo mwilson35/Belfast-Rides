@@ -1,4 +1,3 @@
-// DriverDetails.js
 import React from 'react';
 
 const containerStyle = {
@@ -8,7 +7,7 @@ const containerStyle = {
 };
 
 const DriverDetails = ({ driverDetails, driverRating }) => {
-  if (!driverDetails) return null; // Guard clause if no details
+  if (!driverDetails) return null;
 
   const { username, vehicle_description, vehicle_reg } = driverDetails;
   const ratingText = driverRating?.avgRating ? Number(driverRating.avgRating).toFixed(1) : 'N/A';
