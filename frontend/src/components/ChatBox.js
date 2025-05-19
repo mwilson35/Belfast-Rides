@@ -37,7 +37,7 @@ const ChatBox = ({ rideId, role }) => {
 
     // Join new room
     socket.emit('joinRoom', { rideId, role });
-    console.log(`ChatBox: joined room ${rideId}`);
+  
 
     // Handler for incoming messages
     const handler = (data) => {
@@ -51,7 +51,7 @@ const ChatBox = ({ rideId, role }) => {
     return () => {
       // Leave old room
       socket.emit('leaveRoom', { rideId, role });
-      console.log(`ChatBox: left room ${rideId}`);
+
       socket.off('chatMessage', handler);
     };
   }, [rideId, role]);
