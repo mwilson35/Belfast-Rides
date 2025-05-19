@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { authenticateToken } = require('./middleware'); // Adjust the path as needed
+const { authenticateToken } = require('./middleware'); 
 
 const router = express.Router();
 
@@ -98,7 +98,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '15m' }
     );
 
-    // Generate a long-lived refresh token (e.g., 7 days)
+    // Generate a long-lived refresh token
     const refreshToken = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'your_secret_key',
