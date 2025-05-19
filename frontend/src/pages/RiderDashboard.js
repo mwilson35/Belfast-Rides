@@ -60,7 +60,7 @@ const handleLeaveRoom = (rideId) => {
 
   const socketRef = useRef(null);
   useEffect(() => {
-    localStorage.removeItem('activeRide'); // clear stale junk on first load
+    localStorage.removeItem('activeRide'); 
   }, []);
   
   useEffect(() => {
@@ -136,7 +136,7 @@ const handleLeaveRoom = (rideId) => {
     setPickupLocation('');
     setDestination('');
     localStorage.removeItem('ridePreview');
-    localStorage.removeItem('route'); // Optional now unless you're persisting previewRoute
+    localStorage.removeItem('route'); 
     notify('Ride preview cleared.');
   }, []);
   
@@ -195,7 +195,7 @@ socketRef.current.on('driverArrived', (data) => {
   const currentRide = activeRideRef.current;
   if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
     console.warn('Ignoring irrelevant driverArrived event:', data);
-    return; // explicitly stop irrelevant notifications
+    return; 
   }
   
   notify('Your driver has arrived!');
@@ -235,7 +235,7 @@ socketRef.current.on('rideCompleted', async (data) => {
 
   setShowRideSummaryModal(true);
 
-  handleLeaveRoom(incomingRideId);  //  leave socket room
+  handleLeaveRoom(incomingRideId);  
     setActiveRide(null);
     setActiveRoute(null);
     setRidePreview(null);
@@ -251,7 +251,7 @@ socketRef.current.on('rideCompleted', async (data) => {
 });
 
 
-// Existing rideCancelled handler (catches admin or generic cancels)
+
 socketRef.current.on('rideCancelled', (data) => {
   const currentRide = activeRideRef.current;
   if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
@@ -275,7 +275,7 @@ socketRef.current.on('rideCancelled', (data) => {
   localStorage.removeItem('activeRide');
 });
 
-// Add this right below it to catch driver-side cancellations
+
 socketRef.current.on('rideCancelledByRider', (data) => {
   const currentRide = activeRideRef.current;
   if (!currentRide || (currentRide.id !== data.rideId && currentRide.rideId !== data.rideId)) {
@@ -366,15 +366,15 @@ socketRef.current.on('rideCancelledByRider', (data) => {
         if (!activeRideData) return;
         const currentRide = activeRideRef.current || {};
   
-        // Always merge driver details if present in current state but missing in the new API response.
+       
         if (currentRide.driver_id && !activeRideData.driver_id) {
           activeRideData.driver_id = currentRide.driver_id;
           activeRideData.driverName = currentRide.driverName;
           activeRideData.driverPhone = currentRide.driverPhone;
-          // Merge any additional driver fields as needed.
+       
         }
   
-        // If status changed to 'arrived', notify.
+   
         if (activeRideData.status === 'arrived' && currentRide.status !== 'arrived') {
           notify('Your driver has arrived!');
         }
@@ -423,7 +423,7 @@ socketRef.current.on('rideCancelledByRider', (data) => {
         return;
       }
   
-      // Unify decoding: assume polyline.decode returns [lat, lng]
+     
       const decodedPath = polyline.decode(encodedPolyline).map(
         ([lat, lng]) => ({ lat, lng })
       );
@@ -460,7 +460,7 @@ const handleRequestRide = async () => {
     setActiveRide({ ...response.data, status: 'requested', rideId });
     setActiveRoute(decodedPath);
     
-    // 🔥 CRITICAL LINE — rider explicitly joins the room here
+  
     socketRef.current.emit('joinRoom', { rideId, role: 'rider' });
 
     setPreviewRoute(null);
@@ -486,10 +486,10 @@ const handleRequestRide = async () => {
     try {
       const response = await api.post('/rides/cancel', { rideId: activeRide.rideId || activeRide.id });
       notify(`Ride canceled. Fee: £${response.data.cancellationFee || 0}`);
-      // Clear active ride data
+
       setActiveRide(null);
-      setActiveRoute(null); // <== Add this to clear the active route state
-      // Clear any preview/active keys from localStorage
+      setActiveRoute(null); 
+     
       localStorage.removeItem('ridePreview');
       localStorage.removeItem('route');
       localStorage.removeItem('activeRide');
