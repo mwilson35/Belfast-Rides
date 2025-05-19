@@ -1,4 +1,3 @@
-// src/components/ActiveRideSection.js
 import React from 'react';
 import RideStatusTimeline from './RideStatusTimeline';
 import DriverDetails from './DriverDetails';
