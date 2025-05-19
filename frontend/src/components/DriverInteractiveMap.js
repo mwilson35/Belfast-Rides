@@ -53,7 +53,7 @@ const DriverInteractiveMap = ({
       el.style.backgroundPosition = 'center';
 
       if (markerData.id === 'driver') {
-        // Use the image from your public folder
+        // Use the image from public folder
         el.style.backgroundImage = `url('${process.env.PUBLIC_URL}/images/car.jpg')`;
         driverMarkerRef.current = new mapboxgl.Marker(el)
           .setLngLat([markerData.lng, markerData.lat])
@@ -76,7 +76,7 @@ const DriverInteractiveMap = ({
     });
   }, [markers]);
 
-  // Directions (Clear route with responsive update)
+  // Directions
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -167,8 +167,8 @@ const DriverInteractiveMap = ({
 
     mapRef.current.easeTo({
       center: [center.lng, center.lat],
-      bearing: 45, // Simulate driver’s orientation forward
-      pitch: 65,   // More realistic driving perspective
+      bearing: 45, 
+      pitch: 65,   
       zoom: 17.5,
       duration: 600,
       easing: t => t,
