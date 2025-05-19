@@ -106,7 +106,6 @@ exports.cancelRide = (req, res) => {
     
     // Emit the rideCancelled event with a payload indicating admin cancellation:
     io.emit('rideCancelled', { rideId, cancelledBy: 'admin' });
-    // Also emit removeRide so it clears in the driver dashboard:
     io.emit('removeRide', rideId);
     
     res.json({ message: 'Ride cancelled successfully' });
