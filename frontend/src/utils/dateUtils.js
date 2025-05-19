@@ -7,13 +7,11 @@ module.exports = {
       // Convert the current date to local time.
       const localDate = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000);
   
-      // Define Friday as the target day (Friday = 5)
+      // Define Friday as the target day
       const targetDay = 5;
       const currentDay = localDate.getDay();
         
       // Calculate days difference to the most recent Friday.
-      // If today is Friday (day 5) or later, subtract the difference;
-      // if earlier than Friday, wrap around by adding 7.
       const dayDiff = currentDay >= targetDay ? currentDay - targetDay : currentDay + (7 - targetDay);
     
       // weekStart is the most recent Friday at 00:00 local time.
@@ -27,7 +25,7 @@ module.exports = {
       weekEnd.setHours(0, 0, 0, 0);
     
       // Format the dates in a YYYY-MM-DD format.
-      const formattedWeekStart = weekStart.toLocaleDateString('en-CA'); // "en-CA" produces YYYY-MM-DD
+      const formattedWeekStart = weekStart.toLocaleDateString('en-CA'); 
       const formattedWeekEnd = weekEnd.toLocaleDateString('en-CA');
     
       return { formattedWeekStart, formattedWeekEnd };
