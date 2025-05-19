@@ -3,11 +3,11 @@ import axios from 'axios';
 import api from '../services/api';
 import '../styles/DriverDashboard.css'; 
 
-// New subcomponent for a single ride history item for drivers
+
 const DriverRideHistoryItem = ({ ride, expanded, onToggle }) => {
   const [mapUrl, setMapUrl] = useState('');
 
-  // When a ride is expanded, we fetch its static map (similar to the rider process)
+
 useEffect(() => {
   if (expanded && ride.encoded_polyline) {
     api.get('/static-map', {
