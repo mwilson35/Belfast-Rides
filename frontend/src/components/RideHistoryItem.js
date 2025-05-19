@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../styles/RideHistory.css'; // Import RideHistory styles
+import '../styles/RideHistory.css'; 
 import api from '../services/api';
 
 
