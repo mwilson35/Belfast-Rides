@@ -16,7 +16,7 @@ router.get('/profile', authenticateToken, (req, res) => {
     if (!results || results.length === 0) {
       return res.status(404).json({ message: "User not found." });
     }
-    console.log("Profile fetched:", results[0]);
+   
     res.json(results[0]);
   });
 });
