@@ -13,7 +13,7 @@ exports.requestRide = async (req, res, io) => {
   }
 
   try {
-    // === Google Geocoding for Pickup ===
+    //Google Geocoding for Pickup 
     const pickupGeoResponse = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json`,
       { params: { address: pickupLocation, key: process.env.GOOGLE_MAPS_API_KEY } }
@@ -23,7 +23,7 @@ exports.requestRide = async (req, res, io) => {
     }
     const { lat: pickupLat, lng: pickupLng } = pickupGeoResponse.data.results[0].geometry.location;
 
-    // === Google Geocoding for Destination ===
+    // Google Geocoding for Destination 
     const destinationGeoResponse = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json`,
       { params: { address: destination, key: process.env.GOOGLE_MAPS_API_KEY } }
@@ -33,7 +33,7 @@ exports.requestRide = async (req, res, io) => {
     }
     const { lat: destLat, lng: destLng } = destinationGeoResponse.data.results[0].geometry.location;
 
-    // === Google Directions API for Routing ===
+    //  Google Directions API for Routing 
     const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${pickupLat},${pickupLng}&destination=${destLat},${destLng}&key=${process.env.GOOGLE_MAPS_API_KEY}`;
     const directionsResponse = await axios.get(directionsUrl);
     const directionsData = directionsResponse.data;
@@ -61,7 +61,7 @@ exports.requestRide = async (req, res, io) => {
       ]
     };
 
-    // === Fare Calculation ===
+    //  Fare Calculation 
     const distanceInMeters = googleRoute.legs.reduce((sum, leg) => sum + leg.distance.value, 0);
     const durationInSeconds = googleRoute.legs.reduce((sum, leg) => sum + leg.duration.value, 0);
     const distanceInKm = distanceInMeters / 1000;
@@ -69,7 +69,7 @@ exports.requestRide = async (req, res, io) => {
     const farePerKm = 1.2;
     const estimatedFare = baseFare + distanceInKm * farePerKm;
 
-    // === Check for Active Ride ===
+    //  Check for Active Ride 
     db.query(
       "SELECT * FROM rides WHERE rider_id = ? AND status IN ('requested', 'accepted')",
       [riderId],
@@ -82,7 +82,7 @@ exports.requestRide = async (req, res, io) => {
           return res.status(400).json({ message: 'You already have an active ride.' });
         }
 
-        // === Insert New Ride into the Database ===
+        // Insert New Ride into the Database 
         db.query(
           `INSERT INTO rides 
             (pickup_location, destination, rider_id, distance, estimated_fare, status, payment_status, encoded_polyline, decoded_route, pickup_lat, pickup_lng, destination_lat, destination_lng) 
@@ -95,8 +95,8 @@ exports.requestRide = async (req, res, io) => {
             estimatedFare,
             'requested',
             'pending',
-            JSON.stringify(geojsonRoute),    // For Mapbox rendering.
-            JSON.stringify(decodedRoute),      // For internal use.
+            JSON.stringify(geojsonRoute),    
+            JSON.stringify(decodedRoute),      
             pickupLat,
             pickupLng,
             destLat,
@@ -123,7 +123,7 @@ exports.requestRide = async (req, res, io) => {
               encoded_polyline: geojsonRoute
             };
 
-            // === Emit New Ride to Drivers ===
+            // Emit New Ride to Drivers 
             io.emit('newAvailableRide', ride);
 
             res.status(201).json({
