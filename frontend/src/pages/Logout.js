@@ -1,7 +1,7 @@
 // src/pages/Logout.js
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import '../styles/Logout.css'; // Ensure this file exists or remove the import if not needed
+import '../styles/Logout.css';
 
 const Logout = () => {
   useEffect(() => {
@@ -16,7 +16,7 @@ const Logout = () => {
         <h1>Logged Out</h1>
         <p>You have been successfully logged out.</p>
         <p>
-          {/* Link to the login page at root */}
+          {}
           <Link to="/">Click here to login.</Link>
         </p>
       </div>
