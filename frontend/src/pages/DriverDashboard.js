@@ -47,9 +47,9 @@ const DriverDashboard = () => {
 
   const [profile, setProfile] = useState(null);
 
-  // NEW: Declare socketRef to store the socket instance
+// socketRef to store the socket instance
   const socketRef = useRef(null);
-  const acceptedRideRef = useRef(null); // ← YOU FORGOT THIS GUY
+  const acceptedRideRef = useRef(null); 
   const bufferedAssignment = useRef(null);
   const handleLeaveRoom = (rideId) => {
   if (rideId && socketRef.current) {
@@ -77,11 +77,11 @@ const DriverDashboard = () => {
     // If the profile isn't loaded yet, buffer the assignment
     if (!profile) {
       bufferedAssignment.current = { rideId, driverId };
-      console.warn("⚠️ Buffered assignment because profile not loaded yet");
+      console.warn("Buffered assignment because profile not loaded yet");
       return;
     }
   
-    // Ensure both IDs are compared as strings
+   
     if (String(driverId) !== String(profile.id)) {
 
       return;
@@ -100,7 +100,7 @@ const DriverDashboard = () => {
         setDestination({ lat: ride.destination_lat, lng: ride.destination_lng });
       }
     } catch (err) {
-      console.error('❌ Failed to fetch ride details:', err);
+      console.error(' Failed to fetch ride details:', err);
     }
   };
   
@@ -264,7 +264,7 @@ useEffect(() => {
       const response = await api.get(`/rides/accepted-ride-details?rideId=${rideId}`);
       const fullRide = response.data;
   
-      setAcceptedRide(fullRide); // now includes decoded_route
+      setAcceptedRide(fullRide); 
       setArrivedPingSent(false);
   
       let pickup = null;
@@ -276,7 +276,7 @@ useEffect(() => {
         setDestination({ lat: fullRide.destination_lat, lng: fullRide.destination_lng });
       }
   
-      // 🧭 GET ROUTE TO PICKUP POINT
+     
       if (pickup && driverLocation) {
         getRouteToPickup(driverLocation, pickup);
       }
@@ -319,14 +319,6 @@ const getRouteToPickup = async (from, to) => {
   }
 };
 
-  
-  
-
-  // Route Drawing: fetch and update directions every 30 seconds
-
-  
-
-
 
 const handleStartRide = async () => {
   if (!acceptedRide) return;
@@ -336,7 +328,7 @@ const handleStartRide = async () => {
     setRiderLocation(null);
     setAcceptedRide((prev) => (prev ? { ...prev, status: 'in_progress' } : prev));
 
-    // 🧭 Set main route only now, AFTER ride starts
+  //Set main route only after ride starts
     if (acceptedRide.decoded_route) {
       setDirections({
         type: 'FeatureCollection',
@@ -356,7 +348,7 @@ const handleStartRide = async () => {
 };
 
 
-// CLEAR THE MAP properly when ride is complete
+
 const clearRideState = () => {
   setAcceptedRide(null);
   setDirections(null);
@@ -371,10 +363,10 @@ const handleCompleteRide = async () => {
     const response = await api.post('/rides/complete', { rideId: acceptedRide.id });
     setMessage(response.data.message || 'Ride completed successfully');
 
-    handleLeaveRoom(acceptedRide.id); // ✅ Explicitly leave socket room here
+    handleLeaveRoom(acceptedRide.id);
 
-    clearRideState();  // Clear map states
-    fetchAvailableRides(); // Refresh available rides
+    clearRideState(); 
+    fetchAvailableRides(); 
   } catch (error) {
     console.error('Error completing ride:', error);
     setMessage('Failed to complete ride.');
@@ -387,11 +379,11 @@ const handleCancelRide = async () => {
     const response = await api.post('/rides/cancel', { rideId: acceptedRide.id });
     setMessage(response.data.message || 'Ride cancelled successfully');
 
-    handleLeaveRoom(acceptedRide.id); // ✅ Explicitly leave socket room here
+    handleLeaveRoom(acceptedRide.id); 
 
     socketRef.current.emit('rideCancelled', { rideId: acceptedRide.id });
-    clearRideState();  // Clear map states
-    fetchAvailableRides(); // Refresh available rides
+    clearRideState();  
+    fetchAvailableRides(); 
   } catch (error) {
     console.error('Error cancelling ride:', error);
     setMessage('Failed to cancel ride.');
@@ -407,7 +399,7 @@ const handleCancelRide = async () => {
   useEffect(() => {
     const checkForOngoingRide = async () => {
       try {
-        const res = await api.get('/rides/accepted-ride-details'); // Auth-aware
+        const res = await api.get('/rides/accepted-ride-details');
         if (res.data && res.data.status !== 'completed' && res.data.status !== 'cancelled') {
           const ride = res.data;
           setAcceptedRide(ride);
@@ -459,13 +451,13 @@ const handleCancelRide = async () => {
             markers={markers}
             center={driverLocation}
             zoom={16}
-            autoFit={acceptedRide ? false : true} // disable auto-fit when a ride is accepted
+            autoFit={acceptedRide ? false : true} 
             directions={directions}
             acceptedRide={acceptedRide}
           />
         </div>
         <div className="ride-requests-panel">
-          {/* Tab Header */}
+
           <div className="tabs">
   <button 
     className={activeTab === 'rides' ? 'active' : ''}
@@ -560,7 +552,7 @@ const handleCancelRide = async () => {
   
 )}
 
-          {/* Persistently mounted ChatBox: */}
+
           <div style={{ display: activeTab === 'chat' ? 'block' : 'none' }}>
             <h2>Chat</h2>
             {acceptedRide ? (
