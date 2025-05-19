@@ -1,5 +1,3 @@
-// dateUtils.js
-
 module.exports = {
     // Returns non-overlapping week boundaries as formatted strings.
     // The week is defined as starting on Friday 00:00 (inclusive) and ending on the next Friday 00:00 (exclusive).
