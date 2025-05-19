@@ -10,7 +10,7 @@ exports.previewRide = async (req, res) => {
   const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
   try {
-    // Explicitly geocode addresses first
+    // geocode addresses
     const geocodeAddress = async (address) => {
       const geocodeRes = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
         params: { address, key: googleApiKey }
