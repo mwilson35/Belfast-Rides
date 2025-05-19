@@ -1,6 +1,6 @@
-// src/components/RideStatusTimeline.js
+
 import React from 'react';
-import '../styles/Dashboard.css'; // Ensure this file is imported so our CSS applies
+import '../styles/Dashboard.css'; 
 
 const RideStatusTimeline = ({ status }) => {
   const statuses = ['requested', 'accepted', 'arrived', 'in_progress', 'completed'];
