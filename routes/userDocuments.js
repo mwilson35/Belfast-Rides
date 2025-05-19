@@ -3,13 +3,13 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const db = require('../db'); // Adjust the path to your database module
-const { authenticateToken } = require('./middleware'); // Adjust if needed
+const db = require('../db'); 
+const { authenticateToken } = require('./middleware'); 
 
 // Configure storage: Files will be stored in the "uploads" folder.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Ensure the uploads folder exists in your project root.
+    cb(null, 'uploads/'); 
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -60,8 +60,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
     default:
       dbDocumentType = '';
   }
-  
-  // If this is a profile photo, update the user's profilePicUrl.
+ 
   if (documentType === 'profilePhoto') {
    
     db.query(
