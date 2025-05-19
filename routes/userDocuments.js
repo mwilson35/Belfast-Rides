@@ -40,7 +40,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
   
   // Normalize the file path.
   const filePath = req.file.path.replace(/\\/g, '/');
-  console.log(`User ${userId} uploaded file ${filePath} with type ${documentType}`);
+  
   
   // Map incoming documentType to database values.
   let dbDocumentType;
@@ -63,7 +63,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
   
   // If this is a profile photo, update the user's profilePicUrl.
   if (documentType === 'profilePhoto') {
-    console.log("Updating profilePicUrl for user:", userId, "with filePath:", filePath);
+   
     db.query(
       "UPDATE users SET profilePicUrl = ? WHERE id = ?",
       [filePath, userId],
@@ -72,7 +72,7 @@ router.post('/uploadDocument', authenticateToken, upload.single('document'), (re
           console.error("Error updating user profile:", updateErr);
           return res.status(500).json({ message: "Error updating user profile" });
         }
-        console.log("User profile updated:", updateResult);
+       
         // Insert the document metadata.
         db.query(
           "INSERT INTO user_documents (user_id, document_type, file_path, status) VALUES (?, ?, ?, ?)",
