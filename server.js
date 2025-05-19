@@ -46,8 +46,7 @@ app.use('/ratings', ratingsRouter);
 app.use('/uploads', express.static('uploads'));
 app.use('/', adminDocumentsRoutes);
 
-// Debug: log your Google Maps API key (remove in production)
-console.log("Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY);
+
 
 // Map and related endpoints
 app.get('/test-maps', async (req, res) => {
@@ -141,14 +140,13 @@ app.get('/static-map', (req, res) => {
 
 
 
-// Debugging log to confirm server startup
-console.log('Server loaded. Routes about to be registered.');
+
 
 // Register authentication routes
 try {
-  console.log('Registering authentication routes...');
+  
   app.use('/auth', authRoutes);
-  console.log('Authentication routes registered.');
+  
 } catch (error) {
   console.error('Error loading auth routes:', error.message);
 }
@@ -157,16 +155,16 @@ try {
 try {
   console.log('Registering ride management routes...');
   app.use('/rides', ridesRoutes);
-  console.log('Ride management routes registered.');
+  
 } catch (error) {
   console.error('Error loading rides routes:', error.message);
 }
 
 // Register driver-specific routes (reusing ridesRoutes for driver operations)
 try {
-  console.log('Registering driver-specific routes...');
+
   app.use('/driver', ridesRoutes);
-  console.log('Driver-specific routes registered.');
+  
 } catch (error) {
   console.error('Error loading driver-specific routes:', error.message);
 }
@@ -190,11 +188,11 @@ const io = new Server(server, {
 app.set('io', io);
 
 io.on('connection', (socket) => {
-  console.log(`New client connected: ${socket.id}`);
+ 
 
   socket.on('registerDriver', (driverId) => {
     driverSockets.set(String(driverId), socket.id);
-    console.log(`🚖 Driver ${driverId} connected.`);
+    
   });
 
   socket.on('joinRoom', ({ rideId, role }) => {
@@ -204,10 +202,10 @@ io.on('connection', (socket) => {
       message: `${role} joined chat.`,
       timestamp: new Date().toISOString()
     });
-    console.log(`User with role ${role} joined room ${rideId}`);
+    
   });
 
-  // ✅ Explicitly add leaveRoom event here clearly
+  // leaveRoom event here 
   socket.on('leaveRoom', ({ rideId, role }) => {
     socket.leave(rideId);
     socket.to(rideId).emit('chatMessage', {
@@ -215,7 +213,7 @@ io.on('connection', (socket) => {
       message: `${role} left chat.`,
       timestamp: new Date().toISOString()
     });
-    console.log(`User with role ${role} left room ${rideId}`);
+    
   });
 
   socket.on('chatMessage', (data) => {
@@ -229,7 +227,7 @@ io.on('connection', (socket) => {
 
   socket.on('driverArrived', (data) => {
     const { rideId } = data;
-    console.log('Driver arrived event received on server:', data);
+    
     io.to(rideId).emit('driverArrived', data); 
   });
 
@@ -242,17 +240,17 @@ io.on('connection', (socket) => {
     for (const [driverId, sockId] of driverSockets.entries()) {
       if (sockId === socket.id) {
         driverSockets.delete(driverId);
-        console.log(`🚖 Driver ${driverId} disconnected.`);
+        
         break;
       }
     }
-    console.log(`Client disconnected: ${socket.id}`);
+   
   });
 });
 
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  
 });
 
