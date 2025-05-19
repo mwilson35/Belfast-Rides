@@ -55,7 +55,7 @@ exports.submitRating = (req, res) => {
             }
             const currentTip = tipResults[0].tip ? parseFloat(tipResults[0].tip) : 0;
             const tipDifference = newTip - currentTip;
-            // Update the ride with the new tip (if different)
+            // Update the ride with the new tip 
             db.query("UPDATE rides SET tip = ? WHERE id = ?", [newTip, rideId], (err, updateResult) => {
               if (err) {
                 console.error("Error updating ride tip:", err);
