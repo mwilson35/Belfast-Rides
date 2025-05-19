@@ -1,4 +1,3 @@
-// utils/fareUtils.js
 const calculateFare = (distance, pricing) => {
     const baseFare = pricing.base_fare || 2.5;
     const perKmRate = pricing.per_km_rate || 1.2;
