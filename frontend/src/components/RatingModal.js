@@ -10,14 +10,6 @@ const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
 
   const handleSubmit = async () => {
     try {
-      console.log('[DEBUG] Submitting rating:', {
-        rideId,
-        rateeId,
-        rating,
-        review,
-        tip: tip || 0
-      });
-  
       await api.post('/ratings', { rideId, rateeId, rating, review, tip: tip || 0 });
       onRatingSubmitted();
       onClose();
