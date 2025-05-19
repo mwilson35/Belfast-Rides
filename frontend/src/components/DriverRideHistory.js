@@ -72,7 +72,7 @@ const DriverRideHistory = () => {
     api.get('/rides/history')
       .then((res) => {
         if (Array.isArray(res.data)) {
-          console.log('[DEBUG] Fetched driver ride history:', res.data);
+      
           setRides(res.data);
         }
       })
