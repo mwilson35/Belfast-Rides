@@ -9,7 +9,7 @@ const DriverMapSection = ({ markers, route, center, zoom }) => (
       route={route} 
       center={center} 
       zoom={zoom} 
-      autoFit={true}  // Enables the auto-adjusting bounds feature for driver view.
+      autoFit={true}  
     />
   </section>
 );
