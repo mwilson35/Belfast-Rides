@@ -1,11 +1,11 @@
-// src/components/RatingModal.js
+
 import React, { useState } from 'react';
 import api from '../services/api';
 
 const RatingModal = ({ rideId, rateeId, onClose, onRatingSubmitted }) => {
   const [rating, setRating] = useState(5);
-  const [review, setReview] = useState(''); // Renamed from comment to review
-  const [tip, setTip] = useState(''); // New tip state
+  const [review, setReview] = useState(''); 
+  const [tip, setTip] = useState(''); 
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
