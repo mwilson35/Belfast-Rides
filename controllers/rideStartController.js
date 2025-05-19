@@ -1,6 +1,6 @@
-// rideStartController.js
-const db = require('../db'); // Ensure this is correct
-// If you have other requires, include them here, e.g.:
+
+const db = require('../db'); 
+
 const jwt = require('jsonwebtoken');
 
 exports.startRide = (req, res) => {
