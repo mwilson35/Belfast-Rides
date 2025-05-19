@@ -1,8 +1,8 @@
 import React from 'react';
-import '../styles/ProfileSection.css'; // Optional custom styling
+import '../styles/ProfileSection.css'; 
 
 const ProfileSection = ({ profile }) => {
-  // Construct a full URL. If profilePicUrl doesn't start with "http", prefix it.
+  
   const imageUrl =
     profile && profile.profilePicUrl
       ? profile.profilePicUrl.startsWith('http')
