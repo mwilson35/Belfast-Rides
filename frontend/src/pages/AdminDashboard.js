@@ -39,7 +39,7 @@ const verifyDriver = (driverId, verified) => {
 const handleAssignDriver = (rideId, driverId) => {
   api.post('/admin/rides/assign', { rideId, driverId })
     .then(() => {
-      console.log(`Assigned driver ${driverId} to ride ${rideId}`);
+    
       setActiveTab(''); setActiveTab('manageRides');
     })
     .catch(err => console.error('Failed to assign driver:', err));
@@ -48,7 +48,7 @@ const handleAssignDriver = (rideId, driverId) => {
 const handleCancelRide = (rideId) => {
   api.post('/admin/rides/cancel', { rideId })
     .then(() => {
-      console.log(`Cancelled ride ${rideId}`);
+  
       setActiveTab(''); setActiveTab('manageRides');
     })
     .catch(err => console.error('Failed to cancel ride:', err));
