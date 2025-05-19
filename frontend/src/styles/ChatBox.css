@@ -1,6 +1,5 @@
 /* ChatBox.css */
 
-/* Custom styling for the chat messages container */
 .chat-messages {
     max-height: 200px;
     overflow-y: auto;
@@ -10,7 +9,7 @@
     background-color: #f9f9f9;
   }
   
-  /* Optional: spacing for individual messages */
+ 
   .chat-message {
     margin-bottom: 0.5rem;
   }
