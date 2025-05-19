@@ -6,13 +6,13 @@ const axios = require('axios');
 const http = require('http');
 const { Server } = require('socket.io');
 
-// Import custom routes and DB connection if needed
+
 const authRoutes = require('./routes/auth');
 const ridesRoutes = require('./routes/rides');
 const usersRoutes = require('./routes/users');
 const userDocumentsRouter = require('./routes/userDocuments');
 const ratingsRouter = require('./routes/ratings');
-const db = require('./db'); // Ensure your DB connection is set up
+const db = require('./db');
 const adminRoutes = require('./routes/admin');
 const app = express();
 const driverSockets = new Map(); // key: driverId, value: socket.id 
@@ -174,13 +174,13 @@ app.get('/', (req, res) => {
   res.send('Welcome to Belfast Rides Backend!');
 });
 
-// --- Socket.IO Integration ---
+
 // Create an HTTP server from the Express app
 const server = http.createServer(app);
 
 // Initialize Socket.IO explicitly for local network use
 const io = new Server(server, {
-  cors: corsOptions // ⚠️ Explicitly use your existing corsOptions here!
+  cors: corsOptions // 
 });
 
 
@@ -205,7 +205,7 @@ io.on('connection', (socket) => {
     
   });
 
-  // leaveRoom event here 
+  // leaveRoom event 
   socket.on('leaveRoom', ({ rideId, role }) => {
     socket.leave(rideId);
     socket.to(rideId).emit('chatMessage', {
