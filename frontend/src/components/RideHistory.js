@@ -1,6 +1,6 @@
 import React from 'react';
 import RideHistoryItem from './RideHistoryItem';
-import '../styles/RideHistory.css'; // Import RideHistory styles
+import '../styles/RideHistory.css'; 
 
 const RideHistory = ({
   rideHistory,
