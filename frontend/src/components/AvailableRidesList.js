@@ -11,7 +11,7 @@ const AvailableRidesList = ({ rides, onAcceptRide }) => {
     <ul className="available-rides-list list-unstyled">
       {rides.map((ride) => {
         const rawPrice = ride.estimated_fare;
-        console.log('Raw estimated_fare:', rawPrice); // explicit debug
+    
         const displayPrice = getFormattedPrice(rawPrice);
 
         return (
