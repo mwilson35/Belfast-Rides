@@ -61,7 +61,7 @@ exports.submitRating = (req, res) => {
                 console.error("Error updating ride tip:", err);
                 return res.status(500).json({ message: "Error updating tip." });
               }
-              console.log(`Ride ${rideId} tip updated from ${currentTip} to ${newTip}. Difference: ${tipDifference}`);
+            
               // Only update earnings if there is a difference.
               if (tipDifference !== 0) {
                 // Update driver earnings for this ride by adding the difference.
@@ -73,7 +73,7 @@ exports.submitRating = (req, res) => {
                       console.error("Error updating driver earnings for tip:", err);
                       return res.status(500).json({ message: "Error updating driver earnings for tip." });
                     }
-                    console.log(`Driver earnings updated for ride ${rideId}: tip difference added = ${tipDifference}`);
+                
 
                     // Update weekly earnings.
                     const currentDate = new Date();
@@ -89,7 +89,7 @@ exports.submitRating = (req, res) => {
                           console.error("Error updating weekly earnings for tip:", err);
                           return res.status(500).json({ message: "Error updating weekly earnings for tip." });
                         }
-                        console.log(`Weekly earnings updated for driver ${ride.driver_id} with tip difference ${tipDifference}`);
+                   
                         return res.status(201).json({ message: "Rating submitted successfully", ratingId: result.insertId });
                       }
                     );
