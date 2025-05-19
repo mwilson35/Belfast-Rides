@@ -44,7 +44,7 @@ const [activeRoute, setActiveRoute] = useState(null);
 const handleLeaveRoom = (rideId) => {
   if (rideId && socketRef.current) {
     socketRef.current.emit('leaveRoom', { rideId, role: 'rider' });
-    console.log(`Explicitly left room ${rideId}`);
+
   }
 };
 
@@ -132,7 +132,7 @@ const handleLeaveRoom = (rideId) => {
 
   const handleClearPreview = useCallback(() => {
     setRidePreview(null);
-    setPreviewRoute(null); // 👈 This is the new sheriff in town
+    setPreviewRoute(null); 
     setPickupLocation('');
     setDestination('');
     localStorage.removeItem('ridePreview');
@@ -225,7 +225,7 @@ socketRef.current.on('rideCompleted', async (data) => {
     return;
   }
 
-  console.log('[SOCKET] Valid rideCompleted payload:', data);
+ 
   notify('Your ride is complete!');
 
   setRideSummary({
@@ -235,9 +235,7 @@ socketRef.current.on('rideCompleted', async (data) => {
 
   setShowRideSummaryModal(true);
 
-  handleLeaveRoom(incomingRideId);  // ✅ explicitly leave socket room here clearly
-
-  setTimeout(() => {
+  handleLeaveRoom(incomingRideId);  //  leave socket room
     setActiveRide(null);
     setActiveRoute(null);
     setRidePreview(null);
@@ -341,13 +339,7 @@ socketRef.current.on('rideCancelledByRider', (data) => {
   
       intervalId = setInterval(async () => {
         try {
-          console.log(`ETA update (${destinationLabel}):`, {
-            origin,
-            destination: destCoords,
-            rideStatus: activeRide.status,
-          });
-  
-          const response = await api.get('/get-directions', {
+            const response = await api.get('/get-directions', {
             params: { origin, destination: destCoords },
           });
   
@@ -435,7 +427,7 @@ socketRef.current.on('rideCancelledByRider', (data) => {
       const decodedPath = polyline.decode(encodedPolyline).map(
         ([lat, lng]) => ({ lat, lng })
       );
-      console.log("Preview decodedPath:", decodedPath);  // Debug log
+     
   
       setPreviewRoute(decodedPath);
       localStorage.setItem('ridePreview', JSON.stringify(response.data));
@@ -664,7 +656,7 @@ localStorage.removeItem('driverLocation');
           ride={rideSummary}
           onClose={() => setShowRideSummaryModal(false)}
           onProceedToRating={() => {
-            console.log('[DEBUG] Ride summary before rating:', rideSummary);
+          
             if (!rideSummary?.id || !rideSummary?.driver_id) {
               alert("Ride data is incomplete. Cannot proceed to rating.");
               return;
