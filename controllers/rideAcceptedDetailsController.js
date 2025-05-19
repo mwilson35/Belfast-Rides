@@ -93,7 +93,7 @@ exports.getAcceptedRideDetails = (req, res) => {
               pickupLng: ride.pickup_lng,
             });
 
-            console.log('Final ride object sent to frontend:', ride);
+     
             res.json(ride);
           }
         );
