@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // adjust if you live in import path chaos
+const db = require('../db'); 
 
 // Get all user documents with user info
 router.get('/admin/user-documents', (req, res) => {
