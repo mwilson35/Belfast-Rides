@@ -5,10 +5,10 @@ const jwt = require('jsonwebtoken');
 
 exports.startRide = (req, res) => {
   const { rideId } = req.body;
-  console.log("startRide called with rideId:", rideId);
+
   
   const driverId = req.user.id;
-  console.log("Driver ID from token:", driverId);
+
   
   if (!rideId) {
     return res.status(400).json({ message: 'rideId is required.' });
@@ -25,7 +25,7 @@ exports.startRide = (req, res) => {
     }
     
     const ride = results[0];
-    console.log("Fetched ride record:", ride);
+
     
     if (ride.driver_id !== driverId) {
       console.error(`Driver ${driverId} is not assigned to ride ${rideId}`);
@@ -46,11 +46,11 @@ exports.startRide = (req, res) => {
       if (!io) {
         console.error("Socket.IO instance not found in req.app");
       } else {
-        console.log("Emitting rideInProgress event for rideId:", rideId);
+   
         io.emit('rideInProgress', { rideId });
       }
       
-      console.log("Ride status updated to in_progress for rideId:", rideId);
+
       res.json({ message: 'Ride started successfully', rideId });
     });
   });
