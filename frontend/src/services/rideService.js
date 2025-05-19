@@ -1,4 +1,3 @@
-// src/services/rideService.js
 import api from './api';
 
 export const fetchRideHistory = async () => {
