@@ -69,12 +69,12 @@ exports.getAllRides = (req, res) => {
   
         // Convert driverId to string for lookup
         const socketId = driverSockets.get(String(driverId));
-        console.log(`Looking for socket of driver ${driverId}, found: ${socketId}`);
+    
   
         if (socketId) {
           // Also send the driverId as a string
           io.to(socketId).emit('driverAccepted', { rideId, driverId: String(driverId) });
-          console.log(`Sent driverAccepted to socket ${socketId} for driver ${driverId}`);
+     
         } else {
           console.warn(`No socket for driver ${driverId}`);
         }
