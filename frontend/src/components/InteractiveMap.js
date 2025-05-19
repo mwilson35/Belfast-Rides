@@ -20,7 +20,7 @@ const InteractiveMap = ({
   };
 
   useEffect(() => {
-    console.log("InteractiveMap rendering with route:", route);
+   
   }, [route]);
 
   useEffect(() => {
