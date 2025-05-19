@@ -6,7 +6,7 @@ const { authenticateToken } = require('./middleware');
 
 router.get('/profile', authenticateToken, (req, res) => {
   const userId = req.user.id;
-  // Make sure the column name exactly matches the database.
+ 
   const query = "SELECT id, username, email, profilePicUrl FROM users WHERE id = ?";
   db.query(query, [userId], (err, results) => {
     if (err) {
