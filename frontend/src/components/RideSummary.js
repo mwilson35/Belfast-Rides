@@ -1,4 +1,3 @@
-// src/components/RideSummary.js
 import React from 'react';
 
 const RideSummary = ({ ride, onClose, onProceedToRating }) => {
