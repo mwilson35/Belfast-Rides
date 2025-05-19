@@ -3,17 +3,17 @@ const db = require('../db');
 
 
 exports.acceptRide = async (req, res) => {
-  console.log('Accept endpoint hit');
+
 
   const { rideId } = req.body;
   const driverId = req.user.id;
 
   if (!rideId) {
-    console.log('Missing rideId in request body:', req.body);
+
     return res.status(400).json({ message: 'rideId is required' });
   }
 
-  console.log(`Attempting to accept ride with ID: ${rideId} by driver: ${driverId}`);
+
 
   try {
     db.query(
@@ -26,7 +26,7 @@ exports.acceptRide = async (req, res) => {
         }
 
         if (results.affectedRows === 0) {
-          console.log(`Ride not found or already accepted: ID ${rideId}`);
+      
           return res.status(404).json({ message: 'Ride not found or already accepted.' });
         }
 
