@@ -6,14 +6,13 @@ const { authenticateToken } = require('./middleware'); // Adjust the path as nee
 
 const router = express.Router();
 
-// ===============================
+
 //        User Signup
-// ===============================
 router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     if (!username || !email || !password) {
-      console.log('Missing fields in signup:', { username, email, password });
+     
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
@@ -35,9 +34,8 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// ===============================
+
 //       Driver Signup
-// ===============================
 router.post('/driver-signup', async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -64,14 +62,12 @@ router.post('/driver-signup', async (req, res) => {
   }
 });
 
-// ===============================
+
 //           User Login
-// ===============================
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  console.log('Login route was hit');
-  console.log('Request body:', req.body);
+
 
   // Find the user in the database
   db.query('SELECT * FROM users WHERE username = ?', [username], async (err, results) => {
@@ -80,7 +76,7 @@ router.post('/login', async (req, res) => {
       return res.status(500).json({ message: 'Database error' });
     }
     if (results.length === 0) {
-      console.log('Invalid username:', username);
+
       return res.status(400).json({ message: 'Invalid username or password' });
     }
 
@@ -89,13 +85,13 @@ router.post('/login', async (req, res) => {
     // Compare the password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      console.log('Invalid password for username:', username);
+
       return res.status(400).json({ message: 'Invalid username or password' });
     }
 
     const payload = { id: user.id, role: user.role, verified: user.verified };
 
-    // Generate a short-lived access token (e.g., 15 minutes)
+    // Generate a short-lived access token 15 minutes
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'your_secret_key',
@@ -109,15 +105,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // OPTIONAL: Save the refresh token in your DB or a persistent store to allow revocation later
-    console.log('Login successful, tokens generated');
+   
+
     res.json({ message: 'Login successful', accessToken, refreshToken });
   });
 });
 
-// ===============================
+
 //        Refresh Token Endpoint
-// ===============================
+
 router.post('/refresh-token', (req, res) => {
   // Expect the refresh token in the request body.
   const { refreshToken } = req.body;
@@ -128,7 +124,7 @@ router.post('/refresh-token', (req, res) => {
   // Verify the refresh token using the same secret.
   jwt.verify(refreshToken, process.env.JWT_SECRET || 'your_secret_key', (err, decoded) => {
     if (err) {
-      console.log('Refresh token error:', err.message);
+     
       return res.status(403).json({ message: 'Invalid refresh token. Please log in again.' });
     }
 
@@ -140,14 +136,13 @@ router.post('/refresh-token', (req, res) => {
       { expiresIn: '15m' }
     );
 
-    console.log('New access token issued for user id:', decoded.id);
+    
     res.json({ accessToken: newAccessToken });
   });
 });
 
-// ===============================
+
 //      Admin Account Creation
-// ===============================
 router.post('/create-admin', authenticateToken, async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -179,7 +174,5 @@ router.post('/create-admin', authenticateToken, async (req, res) => {
   }
 });
 
-// ===============================
-//           Export Router
-// ===============================
+
 module.exports = router;
