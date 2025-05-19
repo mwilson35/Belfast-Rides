@@ -1,4 +1,4 @@
-// src/pages/Logout.js
+
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Logout.css';
