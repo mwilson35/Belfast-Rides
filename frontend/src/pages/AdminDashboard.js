@@ -1,4 +1,3 @@
-// frontend/src/pages/AdminDashboard.js
 import React, { useState, useEffect } from 'react';
 import '../styles/AdminDashboard.css';
 import axios from 'axios';
