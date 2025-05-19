@@ -7,7 +7,7 @@ const calculateFare = (distance, pricing) => {
     const calculatedFare = baseFare + (distance * perKmRate);
     const totalFare = calculatedFare * surgeMultiplier;
 
-    return parseFloat(totalFare.toFixed(2)); // Round to 2 decimal places
+    return parseFloat(totalFare.toFixed(2)); 
 };
 
 module.exports = { calculateFare };
