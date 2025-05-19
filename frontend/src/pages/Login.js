@@ -20,7 +20,7 @@ const Login = () => {
       localStorage.setItem('refreshToken', refreshToken);
       setMessage('Login successful!');
       const decoded = jwtDecode(accessToken);
-      console.log("Decoded token:", decoded);
+    
       if (decoded.role === 'driver') {
         navigate('/driver-dashboard');
       } else if (decoded.role === 'rider') {
