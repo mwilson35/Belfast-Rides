@@ -54,7 +54,7 @@ const DriverDashboard = () => {
   const handleLeaveRoom = (rideId) => {
   if (rideId && socketRef.current) {
     socketRef.current.emit('leaveRoom', { rideId, role: 'driver' });
-    console.log(`Explicitly left room ${rideId}`);
+
   }
 };
 
@@ -72,8 +72,7 @@ const DriverDashboard = () => {
     fetchAvailableRides();
   }, []);
   const handleAssigned = async ({ rideId, driverId }) => {
-    console.log("🟡 [SOCKET] driverAccepted received:", { rideId, driverId });
-    console.log("🟢 [STATE] Current profile.id:", profile?.id);
+
   
     // If the profile isn't loaded yet, buffer the assignment
     if (!profile) {
@@ -84,7 +83,7 @@ const DriverDashboard = () => {
   
     // Ensure both IDs are compared as strings
     if (String(driverId) !== String(profile.id)) {
-      console.log(`❌ Not for this driver (got ${driverId}, expected ${profile.id})`);
+
       return;
     }
   
@@ -115,9 +114,9 @@ useEffect(() => {
   socketRef.current = socket;
 
   socket.on('connect', () => {
-    console.log('✅ Driver socket connected:', socket.id);
+   
     socket.emit('registerDriver', profile.id);
-    console.log(`Sent registerDriver for driver ${profile.id}`);
+   
   });
 
   socket.on('connect_error', (err) => {
@@ -125,10 +124,10 @@ useEffect(() => {
   });
 
   socket.on('driverAccepted', handleAssigned);
-  console.log('✅ Subscribed to driverAccepted');
+
 
   socket.on('newAvailableRide', (ride) => {
-    console.log('New available ride received:', ride);
+
     setAvailableRides((prev) => {
       if (prev.some((r) => r.id === ride.id)) return prev;
       return [...prev, ride];
@@ -136,12 +135,12 @@ useEffect(() => {
   });
 
   socket.on('removeRide', (rideId) => {
-    console.log('Remove ride event received for ride id:', rideId);
+   
     setAvailableRides((prev) => prev.filter((r) => r.id !== rideId));
   });
 
   const handleCancel = ({ rideId, cancelledBy }) => {
-    console.log('Ride cancelled event received:', { rideId, cancelledBy });
+ 
     if (acceptedRideRef.current?.id === rideId) {
       clearRideState();
       const source = cancelledBy || 'rider';
@@ -159,7 +158,7 @@ useEffect(() => {
     socket.off('rideCancelledByRider', handleCancel);
     socket.off('rideCancelled', handleCancel);
     socket.disconnect();
-    console.log('Socket disconnected');
+
   };
 }, [profile]);
 
@@ -188,15 +187,13 @@ useEffect(() => {
           riderLocation.lng
         );
 
-        console.log('Distance to pickup:', distance);
-        console.log('acceptedRide:', acceptedRide);
-        console.log('arrivedPingSent:', arrivedPingSent);
+
 
         if (distance < 55) {
           setTimeout(() => {
             socketRef.current?.emit('driverArrived', { rideId: acceptedRide.id, location: loc });
             setArrivedPingSent(true);
-            console.log('🟢 driverArrived emitted');
+  
           }, 2000);
         }
       }
