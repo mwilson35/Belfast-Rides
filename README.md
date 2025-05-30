@@ -13,7 +13,7 @@ This project was developed as part of my MSc Software Development program and ha
 
 ---
 
-## 🧠 Features
+##  Features
 
 ### Rider Dashboard
 - Book taxi rides
@@ -34,7 +34,7 @@ This project was developed as part of my MSc Software Development program and ha
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 **Frontend:** React, React Router, Bootstrap  
 **Backend:** Node.js, Express  
@@ -56,7 +56,7 @@ This project was developed as part of my MSc Software Development program and ha
 
 ---
 
-## 🚀 Development Notes
+##  Development Notes
 
 All backend API endpoints were tested manually using `.http` REST Client files within VS Code. Development involved testing JSON responses against the live Railway database during integration. Frontend testing was done continuously during dashboard flow development.
 
@@ -68,7 +68,7 @@ All backend API endpoints were tested manually using `.http` REST Client files w
 
 ---
 
-## ✍️ Author
+##  Author
 
 Michael Wilson  
 [GitHub](https://github.com/mwilson35) • Remote-friendly 
