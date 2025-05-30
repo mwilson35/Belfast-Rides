@@ -25,14 +25,14 @@ This project was developed as part of my MSc Software Development program and ha
 - Accept or cancel rides
 - View weekly earnings
 - Upload verification documents
-- username:newdriver, password:securePassword123
+- username: newdriver, password: securePassword123
 
 ### Admin Panel
 - Search and view user details
 - Verify driver documentation
 - Assign and cancel rides
 - Monitor live ride and user data
-- Restricted admin creation- historical login- username:newadmin, password: secureAdminPassword123
+- Restricted admin creation- historical login- username: newadmin, password: secureAdminPassword123
 
 ---
 
