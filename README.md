@@ -66,7 +66,7 @@ All backend API endpoints were tested manually using `.http` REST Client files w
 
 ## 📱 Related Projects
 
-- **Mobile Version (WIP):** [Belfast Rides Mobile](https://github.com/mwilson35/Belfast-Rides-Mobile)
+- **Mobile Version (WIP):** [Belfast Rides Mobile](https://github.com/mwilson35/BelfastRidesApp)
 
 ---
 
